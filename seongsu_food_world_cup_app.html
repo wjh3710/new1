@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>성수동 맛집 왕좌의 게임 | Seongsu Food Tournament</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library for Winner Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- html2canvas Library for Capturing Result Card -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: '#FF5E1E',
+                            yellow: '#FFB800',
+                            dark: '#0F0F12',
+                            card: '#18181C',
+                            border: '#2A2A32',
+                            neon: '#00FF9D'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0F0F12;
+            color: #F3F4F6;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .glow-orange {
+            box-shadow: 0 0 25px rgba(255, 94, 30, 0.35);
+        }
+        .glow-neon {
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+        }
+        .vs-badge {
+            background: linear-gradient(135deg, #FF5E1E 0%, #FFB800 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #18181C;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2A2A32;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-brand-dark/90 backdrop-blur-md border-b border-brand-border px-4 py-3">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showView('home')">
+                <div class="w-9 h-9 rounded-xl vs-badge flex items-center justify-center font-black text-black text-xl shadow-lg">
+                    👑
+                </div>
+                <div>
+                    <span class="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-yellow">
+                        성수 맛집 왕좌
+                    </span>
+                    <span class="text-xs text-gray-400 block -mt-1 font-medium">REAL TIER TOURNAMENT</span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center gap-2 sm:gap-4">
+                <button onclick="showView('home')" id="nav-home" class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all">
+                    토너먼트
+                </button>
+                <button onclick="showView('tierlist')" id="nav-tierlist" class="px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all">
+                    종합 티어표
+                </button>
+                <button onclick="openLoginModal()" class="px-3 py-1.5 text-xs sm:text-sm font-bold border border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white rounded-lg transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>로그인</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6">
+
+        <!-- ================= VIEW 1: HOME (Tournament Selection) ================= -->
+        <section id="view-home" class="space-y-8 animate-fade-in">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-card via-brand-dark to-brand-card border border-brand-border p-6 sm:p-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div class="space-y-3 max-w-xl z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/10 border border-brand-orange/30 text-brand-orange text-xs font-bold">
+                        <span class="animate-pulse">🔥</span> 성수동 핫플 진검승부 시즌 1
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
+                        가짜 리뷰에 속지 마라!<br>
+                        <span class="text-brand-orange">성수동 진짜 맛집</span>을 가리는 토너먼트
+                    </h1>
+                    <p class="text-gray-400 text-sm sm:text-base">
+                        사은품 이벤트 개입 Zero! 팬심과 맛으로 겨루는 1:1 이상형 월드컵.<br class="hidden sm:block">
+                        당신의 한 표로 성수동 맛집 S티어가 결정됩니다.
+                    </p>
+                </div>
+                <div class="relative z-10 flex-shrink-0">
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-tr from-brand-orange to-brand-yellow flex items-center justify-center text-6xl shadow-2xl glow-orange">
+                        🏆
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tournament Category Selection -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-brand-orange"></i> 진행 중인 토너먼트
+                    </h2>
+                    <span class="text-xs text-gray-500">1일 1회 소셜 인증 투표</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="category-cards-container">
+                    <!-- Cards will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Notice / Rules Box -->
+            <div class="p-4 rounded-xl bg-brand-card/50 border border-brand-border text-xs text-gray-400 flex items-start gap-3">
+                <i class="fa-solid fa-circle-info text-brand-orange text-base mt-0.5"></i>
+                <div class="space-y-1">
+                    <p class="font-bold text-gray-300">어뷰징 방지 및 공정 투표 시스템 안내</p>
+                    <p>본 서비스는 네이버/카카오 영수증 이벤트 등 외부 사은품 개입을 차단합니다. 동일 IP 및 무분별한 중복 투표는 시스템에 의해 실시간 제한되며, 소셜 계정당 1일 1회 투표권이 부여됩니다.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= VIEW 2: GAME (1:1 Tournament Match) ================= -->
+        <section id="view-game" class="hidden space-y-6">
+            <!-- Tournament Info Header & Progress Bar -->
+            <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <button onclick="confirmExitGame()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1 mb-1">
+                            <i class="fa-solid fa-arrow-left"></i> 목록으로
+                        </button>
+                        <h2 id="game-title" class="text-lg font-bold text-white">성수동 감자탕 Top 8</h2>
+                    </div>
+                    <div class="text-right">
+                        <span id="game-round-badge" class="px-3 py-1 rounded-full bg-brand-orange/20 text-brand-orange font-black text-sm border border-brand-orange/30">
+                            8강전 (1/4)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-brand-dark rounded-full h-2.5 overflow-hidden border border-brand-border">
+                    <div id="game-progress-bar" class="bg-gradient-to-r from-brand-orange to-brand-yellow h-2.5 rounded-full transition-all duration-300" style="width: 25%"></div>
+                </div>
+            </div>
+
+            <!-- VS Match Area (2 Cards Side-by-Side or Stacked) -->
+            <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 my-4">
+                <!-- VS Badge Floating in Center -->
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full vs-badge text-black font-black text-lg sm:text-2xl flex items-center justify-center shadow-2xl border-4 border-brand-dark animate-bounce">
+                        VS
+                    </div>
+                </div>
+
+                <!-- Match Card 1 -->
+                <div id="card-0" onclick="selectCandidate(0)" class="group cursor-pointer bg-brand-card border-2 border-brand-border hover:border-brand-orange rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between">
+                    <div class="relative h-52 sm:h-64 overflow-hidden">
+                        <img id="card-0-img" src="" alt="맛집 이미지" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-transparent to-transparent"></div>
+                        <span id="card-0-seed" class="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-gray-300 text-xs font-bold rounded-md">
+                            후보 A
+                        </span>
+                    </div>
+                    <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 id="card-0-name" class="text-xl font-black text-white group-hover:text-brand-orange transition-colors">맛집 이름 1</h3>
+                                <span id="card-0-menu-tag" class="text-xs px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">대표메뉴</span>
+                            </div>
+                            <p id="card-0-desc" class="text-sm text-gray-400 mt-2 line-clamp-2">맛집 한 줄 요약 특징 설명이 들어가는 자리입니다.</p>
+                        </div>
+                        <div class="pt-2 border-t border-brand-border/50 flex items-center justify-between text-xs text-gray-500">
+                            <span><i class="fa-solid fa-utensils text-brand-orange"></i> <span id="card-0-menu">대표 메뉴</span></span>
+                            <span><i class="fa-solid fa-star text-brand-yellow"></i> 실시간 평점 Top</span>
+                        </div>
+                        <button class="w-full py-3 rounded-xl bg-brand-border group-hover:bg-brand-orange group-hover:text-white text-gray-300 font-bold transition-all text-sm flex items-center justify-center gap-2">
+                            <span>선택하기</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Match Card 2 -->
+                <div id="card-1" onclick="selectCandidate(1)" class="group cursor-pointer bg-brand-card border-2 border-brand-border hover:border-brand-orange rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between">
+                    <div class="relative h-52 sm:h-64 overflow-hidden">
+                        <img id="card-1-img" src="" alt="맛집 이미지" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-transparent to-transparent"></div>
+                        <span id="card-1-seed" class="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-gray-300 text-xs font-bold rounded-md">
+                            후보 B
+                        </span>
+                    </div>
+                    <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 id="card-1-name" class="text-xl font-black text-white group-hover:text-brand-orange transition-colors">맛집 이름 2</h3>
+                                <span id="card-1-menu-tag" class="text-xs px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">대표메뉴</span>
+                            </div>
+                            <p id="card-1-desc" class="text-sm text-gray-400 mt-2 line-clamp-2">맛집 한 줄 요약 특징 설명이 들어가는 자리입니다.</p>
+                        </div>
+                        <div class="pt-2 border-t border-brand-border/50 flex items-center justify-between text-xs text-gray-500">
+                            <span><i class="fa-solid fa-utensils text-brand-orange"></i> <span id="card-1-menu">대표 메뉴</span></span>
+                            <span><i class="fa-solid fa-star text-brand-yellow"></i> 실시간 평점 Top</span>
+                        </div>
+                        <button class="w-full py-3 rounded-xl bg-brand-border group-hover:bg-brand-orange group-hover:text-white text-gray-300 font-bold transition-all text-sm flex items-center justify-center gap-2">
+                            <span>선택하기</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= VIEW 3: RESULT (Winner & Tier List) ================= -->
+        <section id="view-result" class="hidden space-y-8 animate-fade-in">
+            <!-- Winner Celebration Banner -->
+            <div class="relative bg-gradient-to-b from-brand-card via-brand-dark to-brand-card border-2 border-brand-orange/50 rounded-3xl p-6 sm:p-10 text-center overflow-hidden glow-orange">
+                <div class="absolute -top-12 -left-12 w-32 h-32 bg-brand-orange/20 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-brand-yellow/20 rounded-full blur-2xl"></div>
+
+                <div class="relative z-10 space-y-4">
+                    <span class="inline-block px-4 py-1.5 rounded-full bg-brand-orange text-white font-black text-xs uppercase tracking-widest shadow-lg">
+                        🏆 Tournament Winner 🏆
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-black text-white">
+                        내가 꼽은 성수동 최강 맛집 1위!
+                    </h2>
+
+                    <!-- Winner Highlight Card -->
+                    <div class="max-w-md mx-auto my-6 bg-brand-dark border border-brand-orange/40 rounded-2xl overflow-hidden shadow-2xl text-left">
+                        <div class="relative h-56">
+                            <img id="winner-img" src="" alt="우승 맛집" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                            <span class="absolute bottom-3 left-3 text-3xl font-black text-brand-yellow drop-shadow-md">
+                                👑 S Tier
+                            </span>
+                        </div>
+                        <div class="p-5 space-y-2">
+                            <h3 id="winner-name" class="text-2xl font-black text-white">우승 맛집 이름</h3>
+                            <p id="winner-desc" class="text-sm text-gray-300">우승 맛집 한 줄 특징</p>
+                            <p class="text-xs text-brand-orange font-semibold pt-2"><i class="fa-solid fa-location-dot"></i> 성수동 매장 정보 연동 완료</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                        <button onclick="openShareModal()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-yellow text-black font-black text-sm shadow-xl hover:opacity-90 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-share-nodes"></i> 인스타 스토리 카드 만들기
+                        </button>
+                        <button onclick="showView('home')" class="px-5 py-3 rounded-xl bg-brand-card border border-brand-border text-white text-sm font-bold hover:bg-brand-border transition-all">
+                            다른 토너먼트 하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Generated My Tier List -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-brand-orange"></i> 방금 완성한 나만의 성수동 티어표
+                    </h3>
+                    <span class="text-xs text-gray-400">토너먼트 선택 결과 반영</span>
+                </div>
+
+                <div class="space-y-3" id="my-tierlist-container">
+                    <!-- S, A, B, C Tier Rows dynamically generated -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= VIEW 4: OVERALL TIERLIST ================= -->
+        <section id="view-tierlist" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-border pb-4">
+                <div>
+                    <h2 class="text-2xl font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-brand-yellow"></i> 성수동 종합 맛집 티어리스트
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">유저들의 실시간 토너먼트 누적 투표 결과 기반 S~D 등급표</p>
+                </div>
+                <!-- Category Filter -->
+                <div class="flex gap-2 overflow-x-auto pb-1" id="tier-filter-buttons">
+                    <!-- Dynamic category filters -->
+                </div>
+            </div>
+
+            <!-- Tier Table -->
+            <div class="space-y-4" id="overall-tier-container">
+                <!-- Tier Rows populated by JS -->
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ================= MODAL 1: INSTAGRAM STORY SHARE CARD ================= -->
+    <div id="modal-share" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 space-y-5 relative">
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-white">인스타그램 스토리 카드</h3>
+                <p class="text-xs text-gray-400">나만의 성수동 맛집 취향을 자랑해보세요!</p>
+            </div>
+
+            <!-- 9:16 Instagram Story Canvas Box -->
+            <div id="story-card-capture" class="w-full aspect-[9/16] bg-gradient-to-b from-brand-dark via-[#1A1A22] to-brand-dark border-2 border-brand-orange/40 rounded-2xl p-5 flex flex-col justify-between text-left relative overflow-hidden shadow-2xl">
+                <!-- Background Accent -->
+                <div class="absolute -top-16 -right-16 w-36 h-36 bg-brand-orange/20 rounded-full blur-xl"></div>
+                
+                <!-- Card Header -->
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <span class="text-[10px] font-bold tracking-widest text-brand-orange uppercase">Seongsu Tier List</span>
+                        <h4 class="text-base font-black text-white" id="story-category-title">성수동 감자탕 Top 8</h4>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] bg-brand-orange text-white font-bold px-2 py-0.5 rounded-full">1위 인증</span>
+                    </div>
+                </div>
+
+                <!-- Winner Center Feature -->
+                <div class="relative z-10 my-auto text-center space-y-3">
+                    <div class="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-brand-yellow shadow-xl">
+                        <img id="story-winner-img" src="" alt="1위" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <span class="text-xs font-black text-brand-yellow">👑 MY NO.1 PICK</span>
+                        <h3 id="story-winner-name" class="text-xl font-black text-white mt-0.5">우승 맛집</h3>
+                        <p id="story-winner-desc" class="text-xs text-gray-300 line-clamp-1 mt-1 px-2">맛집 설명</p>
+                    </div>
+                </div>
+
+                <!-- Tier Mini Summary -->
+                <div class="relative z-10 space-y-1.5 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-red-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0">S</span>
+                        <span id="story-tier-s" class="text-gray-200 font-bold truncate">소문난성수감자탕</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-orange-500 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0">A</span>
+                        <span id="story-tier-a" class="text-gray-300 truncate">소문난성수감자탕 외 1개</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-yellow-500 text-black font-black text-[10px] flex items-center justify-center flex-shrink-0">B</span>
+                        <span id="story-tier-b" class="text-gray-400 truncate">기타 후보군</span>
+                    </div>
+                </div>
+
+                <!-- Card Footer Branding -->
+                <div class="relative z-10 border-t border-white/10 pt-2 flex justify-between items-center text-[10px] text-gray-400">
+                    <span>@성수동맛집왕좌의게임</span>
+                    <span class="text-brand-orange font-bold">seongsu-food.kr</span>
+                </div>
+            </div>
+
+            <!-- Share Modal Buttons -->
+            <div class="space-y-2">
+                <button onclick="downloadStoryImage()" class="w-full py-3 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> 카드 이미지 저장하기
+                </button>
+                <button onclick="copyServiceLink()" class="w-full py-2.5 rounded-xl bg-brand-border text-gray-300 hover:text-white text-xs font-semibold transition-all">
+                    링크 복사해서 스토리 공유하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 2: SOCIAL LOGIN SIMULATION ================= -->
+    <div id="modal-login" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 space-y-5 relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 mx-auto rounded-full vs-badge flex items-center justify-center text-xl font-black text-black">
+                    👑
+                </div>
+                <h3 class="text-lg font-bold text-white">공정 투표를 위한 소셜 로그인</h3>
+                <p class="text-xs text-gray-400">어뷰징 방지 및 1일 1회 실질 투표 반영을 위해 소셜 계정 인증이 필요합니다.</p>
+            </div>
+
+            <div class="space-y-2.5 pt-2">
+                <button onclick="simulatedLogin('카카오')" class="w-full py-3 rounded-xl bg-[#FEE500] text-[#191919] font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                    <i class="fa-solid fa-comment"></i> 카카오로 3초 만에 시작하기
+                </button>
+                <button onclick="simulatedLogin('네이버')" class="w-full py-3 rounded-xl bg-[#03C75A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                    <i class="fa-solid fa-N"></i> 네이버로 시작하기
+                </button>
+            </div>
+
+            <p class="text-[11px] text-gray-500 text-center">
+                로그인 시 본 서비스의 개인정보 처리방침에 동의하게 됩니다.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-orange text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i> <span id="toast-message">알림 메시지</span>
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="border-t border-brand-border bg-brand-dark py-6 px-4 text-center text-xs text-gray-500">
+        <div class="max-w-5xl mx-auto space-y-2">
+            <p class="font-bold text-gray-400">성수동 맛집 왕좌의 게임 (Seongsu Food Tournament)</p>
+            <p>본 서비스는 유저들의 1:1 토너먼트 투표 데이터를 기반으로 한 공정 티어 플랫폼입니다.</p>
+            <p class="text-gray-600">© 2026 Seongsu Food Tournament. All rights reserved.</p>
+        </div>
+    </footer>
+
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // --- DATA STRUCTURES ---
+        const TOURNAMENTS = [
+            {
+                id: 'gamjatang',
+                title: '성수동 감자탕 & 국물 Top 8',
+                desc: '성수동의 노포 및 깊은 국물 맛집 진검승부!',
+                badge: '인기 폭발',
+                icon: '🍲',
+                candidates: [
+                    { id: 1, name: '소문난성수감자탕', desc: '백종원 3대천왕 출신, 성수동 대표 독보적 감자탕', menu: '감자탕 / 우거지', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80' },
+                    { id: 2, name: '성수육칼', desc: '칼칼하고 진한 육개장 칼국수와 수육의 완벽한 조합', menu: '육개장 칼국수', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80' },
+                    { id: 3, name: '뚝섬 한식당', desc: '직장인 성지, 칼칼한 내장탕과 뼈해장국 전문점', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' },
+                    { id: 4, name: '성수순대국', desc: '깔끔한 국물과 꽉 찬 수제 순대의 정석', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80' },
+                    { id: 5, name: '서울숲 곰탕', desc: '맑고 맑은 고기 국물에 대파 듬뿍 노포 스타일', menu: '나주곰탕', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80' },
+                    { id: 6, name: '뚝도시장 해장국', desc: '뚝도쇼핑효소시장 근처 오래된 시원한 선지해장국', menu: '선지해장국', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80' },
+                    { id: 7, name: '성수 설렁탕', desc: '진하게 고아낸 사골 국물과 깍두기 맛집', menu: '설렁탕', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80' },
+                    { id: 8, name: '서울숲 매운갈비찜', desc: '중독성 강한 매콤한 양념과 부드러운 갈비', menu: '매운갈비찜', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' }
+                ]
+            },
+            {
+                id: 'dessert',
+                title: '성수동 디저트 & 베이커리 Top 8',
+                desc: '인스타 감성과 감탄 나오는 맛의 디저트 성지',
+                badge: '2030 여성 픽',
+                icon: '🥐',
+                candidates: [
+                    { id: 101, name: '어니언 성수', desc: '폐공장 개조 핫플, 시그니처 팡도르 대표 베이커리', menu: '팡도르 / 소금빵', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80' },
+                    { id: 102, name: 'Meal° (밀도)', desc: '줄 서서 먹는 식빵 대표 맛집, 촉촉함의 끝판왕', menu: '큐브식빵 / 커스터드', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80' },
+                    { id: 103, name: '로우키 (Lowkey)', desc: '스페셜티 커피와 은은한 케이크의 깊은 풍미', menu: '필터커피 / 파운드', img: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=600&q=80' },
+                    { id: 104, name: '새들러하우스', desc: '크로플 열풍의 주역, 바삭하고 달콤한 크로플', menu: '플레인 크로플', img: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80' },
+                    { id: 105, name: '대림창고', desc: '갤러리 카페의 대명사, 비주얼 독보적 타르트', menu: '딸기 타르트', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?auto=format&fit=crop&w=600&q=80' },
+                    { id: 106, name: '클레멘타인', desc: '꽃과 디저트가 함께하는 감성 플라워 카페', menu: '휘낭시에 / 스콘', img: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=600&q=80' },
+                    { id: 107, name: '자연도 소금빵', desc: '버터 향 풍부한 겉바속촉 극강 소금빵', menu: '소금빵 4개입', img: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80' },
+                    { id: 108, name: '베타서비스', desc: '와인과 어울리는 프렌치 스타일 타파스 디저트', menu: '치즈케이크', img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=600&q=80' }
+                ]
+            },
+            {
+                id: 'pasta',
+                title: '성수동 데이트 & 양식 Top 8',
+                desc: '소개팅 성공률 100%! Atmosphere & 맛 보장',
+                badge: '데이트 추천',
+                icon: '🍝',
+                candidates: [
+                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '미쉐린 가이드 선정, 독창적인 고수 파스타', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80' },
+                    { id: 202, name: '오스테리아 잔니', desc: '이탈리안 정통 생면 파스타 전문 다이닝', menu: '트러플 뇨끼', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80' },
+                    { id: 203, name: '성수다락', desc: '매콤 크림 파스타와 폭신한 오므라이스 매력', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80' },
+                    { id: 204, name: '바위파스타바', desc: '예약 전쟁! 생면 파스타 바의 감각적인 선두주자', menu: '생면 파스타 코스', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80' },
+                    { id: 205, name: '쿠냐', desc: '아늑한 분위기에서 즐기는 스테이크와 생면', menu: '살치살 스테이크', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' },
+                    { id: 206, name: '세디치', desc: '깔끔한 와인 파어링과 브런치 전문 레스토랑', menu: '버섯 크림 파스타', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80' },
+                    { id: 207, name: '마리오네', desc: '나폴리 피자 대회 우승 피자장인의 화덕피자', menu: '가리발디 피자', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80' },
+                    { id: 208, name: '보메성수', desc: '높은 층고와 모던 아트가 공존하는 럭셔리 다이닝', menu: '해산물 비앙코', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80' }
+                ]
+            }
+        ];
+
+        // --- APP STATE ---
+        let currentTournament = null;
+        let currentRoundList = [];
+        let nextRoundList = [];
+        let currentMatchIndex = 0;
+        let roundName = '8강';
+        let tournamentRankings = []; // Stores eliminated order to build user tier list
+        let myUserTierResult = null;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            renderHomeCategories();
+            renderOverallTierlist();
+        };
+
+        // --- VIEW SWITCHER ---
+        function showView(viewName) {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-result').classList.add('hidden');
+            document.getElementById('view-tierlist').classList.add('hidden');
+
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            // Update Nav styling
+            document.getElementById('nav-home').className = viewName === 'home' 
+                ? 'px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
+                : 'px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
+            
+            document.getElementById('nav-tierlist').className = viewName === 'tierlist'
+                ? 'px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
+                : 'px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- RENDER HOME CATEGORIES ---
+        function renderHomeCategories() {
+            const container = document.getElementById('category-cards-container');
+            container.innerHTML = '';
+
+            TOURNAMENTS.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'bg-brand-card border border-brand-border hover:border-brand-orange rounded-2xl p-5 space-y-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-3xl">${t.icon}</span>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-brand-orange/20 text-brand-orange border border-brand-orange/30 font-bold">${t.badge}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-white">${t.title}</h3>
+                            <p class="text-xs text-gray-400 mt-1">${t.desc}</p>
+                        </div>
+                    </div>
+                    <button onclick="startTournament('${t.id}')" class="w-full py-2.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm transition-all flex items-center justify-center gap-2">
+                        <span>토너먼트 시작</span> <i class="fa-solid fa-play text-xs"></i>
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- GAME ENGINE LOGIC ---
+        function startTournament(tournamentId) {
+            currentTournament = TOURNAMENTS.find(t => t.id === tournamentId);
+            if (!currentTournament) return;
+
+            // Shuffle Candidates
+            currentRoundList = [...currentTournament.candidates].sort(() => Math.random() - 0.5);
+            nextRoundList = [];
+            currentMatchIndex = 0;
+            roundName = '8강';
+            tournamentRankings = [];
+
+            showView('game');
+            updateMatchDisplay();
+        }
+
+        function updateMatchDisplay() {
+            const candidateA = currentRoundList[currentMatchIndex * 2];
+            const candidateB = currentRoundList[currentMatchIndex * 2 + 1];
+
+            const totalMatchesInRound = currentRoundList.length / 2;
+            const currentMatchNum = currentMatchIndex + 1;
+
+            // Update Headers
+            document.getElementById('game-title').innerText = currentTournament.title;
+            document.getElementById('game-round-badge').innerText = `${roundName} (${currentMatchNum}/${totalMatchesInRound})`;
+            
+            // Progress percentage
+            const progressPercent = (currentMatchNum / totalMatchesInRound) * 100;
+            document.getElementById('game-progress-bar').style.width = `${progressPercent}%`;
+
+            // Card 0 (A)
+            document.getElementById('card-0-img').src = candidateA.img;
+            document.getElementById('card-0-name').innerText = candidateA.name;
+            document.getElementById('card-0-desc').innerText = candidateA.desc;
+            document.getElementById('card-0-menu').innerText = candidateA.menu;
+            document.getElementById('card-0-seed').innerText = `${roundName} 후보 A`;
+
+            // Card 1 (B)
+            document.getElementById('card-1-img').src = candidateB.img;
+            document.getElementById('card-1-name').innerText = candidateB.name;
+            document.getElementById('card-1-desc').innerText = candidateB.desc;
+            document.getElementById('card-1-menu').innerText = candidateB.menu;
+            document.getElementById('card-1-seed').innerText = `${roundName} 후보 B`;
+        }
+
+        function selectCandidate(selectedIndex) {
+            const candidateA = currentRoundList[currentMatchIndex * 2];
+            const candidateB = currentRoundList[currentMatchIndex * 2 + 1];
+
+            const winner = selectedIndex === 0 ? candidateA : candidateB;
+            const loser = selectedIndex === 0 ? candidateB : candidateA;
+
+            nextRoundList.push(winner);
+            tournamentRankings.push({ candidate: loser, roundEliminated: roundName });
+
+            currentMatchIndex++;
+
+            // Check if current round completed
+            if (currentMatchIndex >= currentRoundList.length / 2) {
+                if (nextRoundList.length === 1) {
+                    // FINAL WINNER REACHED
+                    const ultimateWinner = nextRoundList[0];
+                    tournamentRankings.push({ candidate: ultimateWinner, roundEliminated: 'Winner' });
+                    finishTournament(ultimateWinner);
+                } else {
+                    // Move to Next Round (4강 or 결승)
+                    currentRoundList = [...nextRoundList];
+                    nextRoundList = [];
+                    currentMatchIndex = 0;
+
+                    if (currentRoundList.length === 4) roundName = '4강전';
+                    else if (currentRoundList.length === 2) roundName = '결승전';
+
+                    updateMatchDisplay();
+                }
+            } else {
+                updateMatchDisplay();
+            }
+        }
+
+        function confirmExitGame() {
+            if (confirm('진행 중인 토너먼트를 포기하고 처음으로 돌아가시겠습니까?')) {
+                showView('home');
+            }
+        }
+
+        // --- FINISH TOURNAMENT & SHOW RESULT ---
+        function finishTournament(winner) {
+            // Trigger Confetti Celebration
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            // Display Winner Info
+            document.getElementById('winner-img').src = winner.img;
+            document.getElementById('winner-name').innerText = winner.name;
+            document.getElementById('winner-desc').innerText = `${winner.desc} (${winner.menu})`;
+
+            // Generate User Tier List from rankings
+            generateMyTierList(winner);
+
+            showView('result');
+            showToast(`🏆 '${winner.name}'이(가) 최종 우승했습니다!`);
+        }
+
+        function generateMyTierList(winner) {
+            const container = document.getElementById('my-tierlist-container');
+            container.innerHTML = '';
+
+            // Group candidates into Tiers based on elimination
+            // S Tier: Winner
+            // A Tier: Finalist (Runner-up)
+            // B Tier: 4강 탈락자 (2개)
+            // C Tier: 8강 탈락자 (4개)
+
+            const runnerUp = tournamentRankings.find(r => r.roundEliminated === '결승전')?.candidate;
+            const semiFinalists = tournamentRankings.filter(r => r.roundEliminated === '4강전').map(r => r.candidate);
+            const quarterFinalists = tournamentRankings.filter(r => r.roundEliminated === '8강').map(r => r.candidate);
+
+            myUserTierResult = {
+                s: [winner],
+                a: runnerUp ? [runnerUp] : [],
+                b: semiFinalists,
+                c: quarterFinalists
+            };
+
+            const tiers = [
+                { tier: 'S', color: 'bg-red-600', text: 'text-red-500', items: myUserTierResult.s },
+                { tier: 'A', color: 'bg-orange-500', text: 'text-orange-500', items: myUserTierResult.a },
+                { tier: 'B', color: 'bg-yellow-500', text: 'text-yellow-500', items: myUserTierResult.b },
+                { tier: 'C', color: 'bg-emerald-500', text: 'text-emerald-500', items: myUserTierResult.c }
+            ];
+
+            tiers.forEach(t => {
+                const row = document.createElement('div');
+                row.className = 'flex rounded-xl bg-brand-card border border-brand-border overflow-hidden min-h-[60px]';
+                
+                let itemsHTML = t.items.map(item => `
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-dark border border-brand-border">
+                        <img src="${item.img}" class="w-7 h-7 rounded-md object-cover">
+                        <span class="text-xs font-bold text-white">${item.name}</span>
+                    </div>
+                `).join('');
+
+                row.innerHTML = `
+                    <div class="${t.color} text-white font-black text-xl w-14 flex items-center justify-center flex-shrink-0">
+                        ${t.tier}
+                    </div>
+                    <div class="p-3 flex items-center gap-2 flex-wrap flex-grow">
+                        ${itemsHTML || '<span class="text-xs text-gray-500">해당 없음</span>'}
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // --- OVERALL TIERLIST VIEW LOGIC ---
+        function renderOverallTierlist() {
+            const container = document.getElementById('overall-tier-container');
+            const filterContainer = document.getElementById('tier-filter-buttons');
+            
+            filterContainer.innerHTML = '';
+            container.innerHTML = '';
+
+            // Filter Buttons
+            TOURNAMENTS.forEach((t, idx) => {
+                const btn = document.createElement('button');
+                btn.className = idx === 0 
+                    ? 'px-3 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-bold whitespace-nowrap'
+                    : 'px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-gray-400 hover:text-white text-xs font-semibold whitespace-nowrap';
+                btn.innerText = t.title.split(' Top')[0];
+                btn.onclick = () => filterOverallTier(t.id, btn);
+                filterContainer.appendChild(btn);
+            });
+
+            // Default display first category
+            filterOverallTier(TOURNAMENTS[0].id);
+        }
+
+        function filterOverallTier(tournamentId, activeBtn = null) {
+            if (activeBtn) {
+                Array.from(document.getElementById('tier-filter-buttons').children).forEach(b => {
+                    b.className = 'px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-gray-400 hover:text-white text-xs font-semibold whitespace-nowrap';
+                });
+                activeBtn.className = 'px-3 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-bold whitespace-nowrap';
+            }
+
+            const tourney = TOURNAMENTS.find(t => t.id === tournamentId);
+            const container = document.getElementById('overall-tier-container');
+            container.innerHTML = '';
+
+            // Pre-calculated static tiers for realistic preview
+            const sTier = [tourney.candidates[0]];
+            const aTier = [tourney.candidates[1], tourney.candidates[2]];
+            const bTier = [tourney.candidates[3], tourney.candidates[4], tourney.candidates[5]];
+            const cTier = [tourney.candidates[6], tourney.candidates[7]];
+
+            const tiers = [
+                { tier: 'S Tier', desc: '성수동 압도적 1위 맛집', color: 'bg-red-600', items: sTier },
+                { tier: 'A Tier', desc: '실질적 우승 후보군', color: 'bg-orange-500', items: aTier },
+                { tier: 'B Tier', desc: '단골 형성 우수 매장', color: 'bg-yellow-500', items: bTier },
+                { tier: 'C Tier', desc: '무난한 기본 맛집', color: 'bg-emerald-500', items: cTier }
+            ];
+
+            tiers.forEach(t => {
+                const section = document.createElement('div');
+                section.className = 'bg-brand-card border border-brand-border rounded-xl overflow-hidden';
+                
+                let cardsHTML = t.items.map(item => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-brand-dark border border-brand-border hover:border-brand-orange/50 transition-all">
+                        <div class="flex items-center gap-3">
+                            <img src="${item.img}" class="w-12 h-12 rounded-lg object-cover">
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${item.name}</h4>
+                                <p class="text-xs text-gray-400">${item.menu} • ${item.desc}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold text-brand-orange bg-brand-orange/10 px-2.5 py-1 rounded-md border border-brand-orange/20">
+                            승률 89%
+                        </span>
+                    </div>
+                `).join('');
+
+                section.innerHTML = `
+                    <div class="p-3 ${t.color} text-white flex justify-between items-center">
+                        <span class="font-black text-base">${t.tier}</span>
+                        <span class="text-xs font-medium opacity-90">${t.desc}</span>
+                    </div>
+                    <div class="p-3 space-y-2">
+                        ${cardsHTML}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        // --- INSTAGRAM STORY SHARE MODAL LOGIC ---
+        function openShareModal() {
+            if (!myUserTierResult) return;
+
+            const winner = myUserTierResult.s[0];
+            document.getElementById('story-category-title').innerText = currentTournament.title;
+            document.getElementById('story-winner-img').src = winner.img;
+            document.getElementById('story-winner-name').innerText = winner.name;
+            document.getElementById('story-winner-desc').innerText = `${winner.desc} (${winner.menu})`;
+
+            document.getElementById('story-tier-s').innerText = winner.name;
+            document.getElementById('story-tier-a').innerText = myUserTierResult.a.map(i => i.name).join(', ') || '없음';
+            document.getElementById('story-tier-b').innerText = myUserTierResult.b.map(i => i.name).join(', ') || '없음';
+
+            document.getElementById('modal-share').classList.remove('hidden');
+        }
+
+        function closeShareModal() {
+            document.getElementById('modal-share').classList.add('hidden');
+        }
+
+        function downloadStoryImage() {
+            const captureArea = document.getElementById('story-card-capture');
+            showToast('📸 이미지 생성 중입니다...');
+
+            html2canvas(captureArea, {
+                scale: 2,
+                backgroundColor: '#0F0F12'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `성수동맛집_티어표_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('✅ 인스타그램 스토리 카드가 저장되었습니다!');
+            }).catch(err => {
+                showToast('❌ 이미지 저장 실패. 스크린샷을 이용해주세요.');
+            });
+        }
+
+        function copyServiceLink() {
+            document.execCommand('copy');
+            showToast('🔗 서비스 공유 링크가 복사되었습니다!');
+        }
+
+        // --- LOGIN MODAL & UTILS ---
+        function openLoginModal() {
+            document.getElementById('modal-login').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('modal-login').classList.add('hidden');
+        }
+
+        function simulatedLogin(provider) {
+            closeLoginModal();
+            showToast(`✅ ${provider} 소셜 인증 완료! 오늘 투표권이 활성화되었습니다.`);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
