@@ -82,29 +82,126 @@
         @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
         @media (max-width: 640px) {
             html { -webkit-text-size-adjust: 100%; }
-            body { line-height: 1.6; }
+            body { line-height: 1.5; }
             header { padding: .65rem .75rem !important; }
             header > div { flex-wrap: wrap; gap: .65rem; }
             header nav { width: 100%; justify-content: space-between; gap: .4rem !important; }
             #user-nav-group { flex: 1 1 auto; min-width: 0; }
             #user-nav-group button, #btn-admin-toggle { min-height: 2.75rem; padding: .5rem .65rem !important; font-size: .8125rem !important; line-height: 1.35; white-space: normal; }
             #auth-nav-container { max-width: 100%; }
-            main { padding: .9rem !important; }
+            main { padding: .75rem !important; }
             main, main * { min-width: 0; }
-            h1, h2, h3, h4, p, label { overflow-wrap: break-word; word-break: keep-all; }
-            h1 { font-size: clamp(1.4rem, 6vw, 1.85rem) !important; line-height: 1.35 !important; }
-            h2 { font-size: 1.1rem !important; line-height: 1.45 !important; }
-            p, label { line-height: 1.65; }
+            h1, h2, h3, h4, p, label { overflow-wrap: anywhere; word-break: keep-all; }
+            h1 { font-size: clamp(1.3rem, 5.7vw, 1.75rem) !important; line-height: 1.3 !important; }
+            h2 { font-size: 1rem !important; line-height: 1.4 !important; }
+            p, label { line-height: 1.5; }
             .text-xs { font-size: .75rem; line-height: 1.55; }
             button, a { line-height: 1.4; }
             .flex > *, .grid > * { min-width: 0; }
-            #home-region-filters button, #admin-region-tabs button { min-height: 2.6rem; }
+            #view-home { gap: 1rem !important; }
+            #view-home > .relative {
+                padding: .9rem 1rem !important;
+                border-radius: 1rem !important;
+                text-align: left !important;
+                gap: .5rem !important;
+            }
+            #view-home > .relative > div:first-child { width: 100%; max-width: none; }
+            #view-home > .relative > div:first-child > div:first-child { font-size: .65rem; padding: .25rem .55rem; }
+            #view-home > .relative > div:first-child { display: flex; flex-direction: column; gap: .35rem; }
+            #view-home > .relative > div:first-child p { display: none; }
+            #view-home > .relative > div:last-child { display: none; }
+            #view-home > div:nth-child(2) > .flex:first-child { align-items: flex-start; gap: .25rem; flex-direction: column; margin-bottom: .55rem !important; }
+            #view-home > div:nth-child(2) > .flex:first-child > span { font-size: .7rem; }
+            #home-region-filters, #admin-region-tabs { gap: .4rem !important; }
+            #home-region-filters button, #admin-region-tabs button {
+                min-height: 2.5rem;
+                height: auto;
+                max-width: 100%;
+                padding: .5rem .7rem !important;
+                line-height: 1.3 !important;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                text-align: center;
+            }
+            #home-region-filters { margin-bottom: .75rem !important; }
+            #category-cards-container { gap: .65rem !important; }
+            #category-cards-container .vote-card { padding: .85rem !important; gap: .55rem !important; border-radius: 1rem !important; }
+            #category-cards-container .vote-card > div:first-child { gap: .45rem !important; }
+            #category-cards-container .vote-card h3 { font-size: 1rem !important; line-height: 1.4 !important; }
+            #category-cards-container .vote-card button { min-height: 2.75rem; margin-top: .15rem !important; }
+            #view-home > .p-4 { padding: .8rem !important; }
+            #view-tierlist { gap: 1rem !important; }
+            #view-tierlist > div:first-child { gap: .75rem !important; }
+            #view-tierlist > div:first-child > div:last-child { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+            #view-tierlist > div:first-child > div:last-child button { justify-content: center; padding: .6rem .4rem !important; font-size: .72rem !important; line-height: 1.35 !important; }
+            #tier-category-filter-wrapper { min-width: 0; }
+            #tier-category-buttons {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: .45rem !important;
+                overflow: visible !important;
+                padding-bottom: 0 !important;
+            }
+            #tier-category-buttons button {
+                min-width: 0;
+                min-height: 2.75rem;
+                height: auto;
+                padding: .5rem .4rem !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                line-height: 1.3 !important;
+                text-align: center;
+                justify-content: center;
+            }
+            #tier-region-filters button { min-height: 2.5rem; padding: .5rem .7rem !important; white-space: normal; }
             #admin-region-tabs { width: 100%; }
             #admin-region-tabs button { flex: 1 1 auto; }
+            #admin-tabs-navigation {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: .45rem !important;
+                overflow: visible !important;
+                padding-bottom: .65rem !important;
+            }
+            #admin-tabs-navigation button {
+                min-width: 0;
+                min-height: 3.1rem;
+                height: auto;
+                padding: .55rem .45rem !important;
+                justify-content: center;
+                gap: .35rem !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                text-align: center;
+                line-height: 1.35 !important;
+                font-size: .72rem !important;
+            }
             #admin-new-region { flex: 1; width: auto !important; min-height: 2.6rem; }
             #admin-tournaments-list-container > div { padding: .9rem; }
             #admin-tournaments-list-container .font-mono { overflow-wrap: anywhere; }
             input, select, textarea { max-width: 100%; font-size: 16px !important; }
+            select {
+                box-sizing: border-box;
+                width: 100%;
+                min-width: 0;
+                min-height: 2.9rem;
+                padding: .65rem 2.25rem .65rem .75rem !important;
+                line-height: 1.35 !important;
+                white-space: normal;
+            }
+            select option { white-space: normal; }
+            #admin-tab-candidates .bg-brand-card > div:first-child { width: 100%; }
+            #admin-tab-candidates > .bg-brand-card { width: 100%; }
+            #admin-tab-candidates > .bg-brand-card > div:first-child { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem !important; }
+            #admin-tab-candidates > .bg-brand-card > div:first-child > div:first-child { display: grid; grid-template-columns: minmax(0, 1fr); gap: .45rem !important; width: 100%; }
+            #admin-tab-candidates > .bg-brand-card > div:first-child > div:first-child label { display: block; }
+            #admin-candidate-filter-select { display: block; flex: none; width: 100%; min-width: 0; font-size: 14px !important; }
+            #admin-tab-candidates > .bg-brand-card > div:first-child > div:last-child,
+            #admin-tab-candidates > .bg-brand-card > div:first-child > div:last-child button { width: 100%; justify-content: center; }
+            #admin-candidate-count-badge { white-space: normal; line-height: 1.35; }
+            #input-candidate-tournament { font-size: 14px !important; }
+            #modal-tournament > div, #modal-candidate > div { padding: 1rem !important; max-height: calc(100dvh - 1rem); }
+            #modal-tournament form, #modal-candidate form { min-width: 0; }
             table { width: 100%; min-width: 34rem; }
             [role="dialog"] { width: calc(100vw - 1rem); max-width: 100%; }
             [role="dialog"] { max-height: calc(100dvh - 1rem); overflow-y: auto; }
@@ -114,6 +211,8 @@
             header { padding-inline: .6rem !important; }
             main { padding: .7rem !important; }
             #user-nav-group button, #btn-admin-toggle { padding-inline: .45rem !important; font-size: .75rem !important; }
+            #view-home > .relative { padding: .75rem !important; }
+            #home-region-filters button { flex: 1 1 calc(50% - .4rem); }
         }
     </style>
 </head>
@@ -323,7 +422,7 @@
             </div>
 
             <!-- Admin Tabs Navigation -->
-            <div class="flex gap-2 border-b border-brand-border overflow-x-auto pb-2 custom-scrollbar">
+            <div id="admin-tabs-navigation" class="flex gap-2 border-b border-brand-border overflow-x-auto pb-2 custom-scrollbar">
                 <button onclick="switchAdminTab('stats')" id="tab-btn-stats" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white transition-all flex items-center gap-2 whitespace-nowrap shadow-md">
                     <i class="fa-solid fa-chart-line"></i> 대시보드 & 종합 통계
                 </button>
@@ -895,6 +994,7 @@
         let supabaseSessionUserId = null;
 
         const REGION_STORAGE_KEY = "FOOD_REGIONS_V1";
+        const DEFAULT_REGIONS = ['건대'];
 
         const DEFAULT_TOURNAMENTS = [
             {
@@ -955,6 +1055,37 @@
                 ]
             }
         ];
+
+        const DEFAULT_KONKUK_TOURNAMENTS = [
+            {
+                id: 'konkuk-korean-demo', region: '건대', title: '한식·국밥 (예시)',
+                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🍲', active: true,
+                candidates: [
+                    { id: 3001, name: '건대 국밥집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3002, name: '건대 국밥집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3003, name: '건대 국밥집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '육개장', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
+                ]
+            },
+            {
+                id: 'konkuk-grill-demo', region: '건대', title: '고기·구이 (예시)',
+                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🥩', active: true,
+                candidates: [
+                    { id: 3011, name: '건대 고깃집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '삼겹살', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3012, name: '건대 고깃집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '갈비', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3013, name: '건대 고깃집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '목살', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
+                ]
+            },
+            {
+                id: 'konkuk-street-food-demo', region: '건대', title: '분식·면요리 (예시)',
+                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🍜', active: true,
+                candidates: [
+                    { id: 3021, name: '건대 분식집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '떡볶이', img: 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3022, name: '건대 면요리집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '라멘', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 3023, name: '건대 분식집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '김밥·튀김', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
+                ]
+            }
+        ];
+        DEFAULT_TOURNAMENTS.push(...DEFAULT_KONKUK_TOURNAMENTS);
 
         // Image Presets for Quick Adding/Editing
         const IMAGE_PRESETS = {
@@ -1083,6 +1214,24 @@
             candidateCounts: {}, menuCounts: {}, myDirect: {}, myMenus: {}, recentLogs: []
         };
 
+        function ensureKonkukDemoSeed(state) {
+            if (state.settings?.konkukDemoSeedV1) return false;
+            state.tournaments ||= [];
+            state.regions ||= [];
+            const existingIds = new Set(state.tournaments.map(tournament => tournament.id));
+            DEFAULT_KONKUK_TOURNAMENTS.forEach(tournament => {
+                if (!existingIds.has(tournament.id)) {
+                    state.tournaments.push(JSON.parse(JSON.stringify(tournament)));
+                }
+            });
+            const regions = new Set(state.regions);
+            DEFAULT_REGIONS.forEach(region => {
+                if (!regions.has(region)) state.regions.push(region);
+            });
+            state.settings = { ...(state.settings || {}), konkukDemoSeedV1: true };
+            return true;
+        }
+
         function getCurrentUserId() {
             return supabaseSessionUserId;
         }
@@ -1124,8 +1273,8 @@
                     };
                 } else {
                     appStateCache = getLegacyStateForMigration();
-                    if (AuthService.isAdmin()) await this.persist();
                 }
+                if (ensureKonkukDemoSeed(appStateCache) && AuthService.isAdmin()) await this.persist();
                 return true;
             },
             async persist() {
@@ -1201,7 +1350,7 @@
                 return this.saveTournaments(list);
             },
             async resetToDefault() {
-                appStateCache = { tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)), regions: [], settings: {} };
+                appStateCache = { tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)), regions: [...DEFAULT_REGIONS], settings: { konkukDemoSeedV1: true } };
                 const saved = await this.persist();
                 return saved ? await StatsService.resetVotes() : false;
             }
@@ -1420,7 +1569,7 @@
         function getTournamentRegion(t) { return (t && t.region ? String(t.region).trim() : "성수") || "성수"; }
 
         function getAvailableRegions() {
-            return [...new Set([...DataService.getRegions(), ...DataService.getTournaments().map(getTournamentRegion)].map(r => String(r).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+            return [...new Set([...DEFAULT_REGIONS, ...DataService.getRegions(), ...DataService.getTournaments().map(getTournamentRegion)].map(r => String(r).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
         }
 
         async function saveRegion(region) {
