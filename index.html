@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>성수동 맛집 왕좌의 게임 | Seongsu Food Tournament</title>
+    <title>지역 맛집 픽 | 지금 뜨는 실시간 투표</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -14,6 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- html2canvas Library for Capturing Result Card -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Chart.js for Admin Dashboard Statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         tailwind.config = {
@@ -27,7 +29,9 @@
                             dark: '#0F0F12',
                             card: '#18181C',
                             border: '#2A2A32',
-                            neon: '#00FF9D'
+                            neon: '#00FF9D',
+                            admin: '#6366F1',
+                            naver: '#03C75A'
                         }
                     },
                     fontFamily: {
@@ -49,11 +53,18 @@
         .glow-neon {
             box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
         }
+        .glow-admin {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+        }
         .vs-badge {
             background: linear-gradient(135deg, #FF5E1E 0%, #FFB800 100%);
         }
+        .admin-badge {
+            background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+        }
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: #18181C;
@@ -62,59 +73,99 @@
             background: #2A2A32;
             border-radius: 3px;
         }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #3F3F4E;
+        }
+        .live-dot { animation: live-pulse 1.4s ease-out infinite; }
+        @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-white">
 
+    <!-- Top Mode Indicator Banner (Shown in Admin Mode) -->
+    <div id="admin-mode-banner" class="hidden bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 border-b border-indigo-700/50 px-4 py-2 text-xs text-indigo-200">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-2 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+                <span class="text-white">관리자(ADMIN) 제어 콘솔 모드 활성화됨</span>
+                <span class="hidden sm:inline text-indigo-300 font-normal">| 백엔드 연동 전 프론트엔드 모의 환경(Mock Mode)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openBackendGuideModal()" class="text-[11px] underline hover:text-white flex items-center gap-1">
+                    <i class="fa-solid fa-code"></i> 백엔드 연동 명세
+                </button>
+                <button onclick="switchToUserView()" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-eye"></i> 사용자 화면 바로가기
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header / Navbar -->
-    <header class="sticky top-0 z-40 bg-brand-dark/90 backdrop-blur-md border-b border-brand-border px-4 py-3">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="showView('home')">
-                <div class="w-9 h-9 rounded-xl vs-badge flex items-center justify-center font-black text-black text-xl shadow-lg">
+    <header class="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-brand-border px-4 py-3">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="handleLogoClick()">
+                <div id="brand-logo-icon" class="w-9 h-9 rounded-xl vs-badge flex items-center justify-center font-black text-black text-xl shadow-lg transition-transform hover:scale-105">
                     👑
                 </div>
                 <div>
-                    <span class="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-yellow">
-                        성수 맛집 왕좌
-                    </span>
-                    <span class="text-xs text-gray-400 block -mt-1 font-medium">REAL TIER TOURNAMENT</span>
+                    <div class="flex items-center gap-2">
+                        <span id="brand-title" class="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-yellow">
+                            맛집 픽
+                        </span>
+                        <span id="header-role-badge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            ADMIN
+                        </span>
+                    </div>
+                    <span id="brand-subtitle" class="text-xs text-gray-400 block -mt-1 font-medium">LIVE FOOD VOTE · 전국</span>
                 </div>
             </div>
 
             <!-- Navigation Tabs -->
-            <nav class="flex items-center gap-2 sm:gap-4">
-                <button onclick="showView('home')" id="nav-home" class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all">
-                    토너먼트
+            <nav class="flex items-center gap-1.5 sm:gap-3">
+                <!-- User Nav Items -->
+                <div id="user-nav-group" class="flex items-center gap-1 sm:gap-2">
+                    <button onclick="showView('home')" id="nav-home" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all">
+                        <i class="fa-solid fa-trophy mr-1"></i> 투표
+                    </button>
+                    <button onclick="showView('tierlist')" id="nav-tierlist" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all">
+                        <i class="fa-solid fa-layer-group mr-1"></i> 맛집 티어표
+                    </button>
+                </div>
+
+                <!-- Admin Console Direct Toggle Button -->
+                <button onclick="toggleAdminView()" id="btn-admin-toggle" class="px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    <span id="admin-btn-label">관리자 콘솔</span>
                 </button>
-                <button onclick="showView('tierlist')" id="nav-tierlist" class="px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all">
-                    종합 티어표
-                </button>
-                <button onclick="openLoginModal()" class="px-3 py-1.5 text-xs sm:text-sm font-bold border border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white rounded-lg transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-user-shield"></i>
-                    <span>로그인</span>
-                </button>
+
+                <!-- Auth Button (Login / Logout / Profile) -->
+                <div id="auth-nav-container">
+                    <!-- Populated dynamically by AuthService -->
+                </div>
             </nav>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6">
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6">
 
-        <!-- ================= VIEW 1: HOME (Tournament Selection) ================= -->
+        <!-- ================= USER VIEW 1: HOME (Tournament Selection) ================= -->
         <section id="view-home" class="space-y-8 animate-fade-in">
             <!-- Hero Banner -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-card via-brand-dark to-brand-card border border-brand-border p-6 sm:p-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div class="space-y-3 max-w-xl z-10">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/10 border border-brand-orange/30 text-brand-orange text-xs font-bold">
-                        <span class="animate-pulse">🔥</span> 성수동 핫플 진검승부 시즌 1
+                        <span class="animate-pulse">🔥</span> 🔥 지금 <span id="home-region-badge">성수</span> 맛집 픽 진행 중
                     </div>
                     <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
-                        가짜 리뷰에 속지 마라!<br>
-                        <span class="text-brand-orange">성수동 진짜 맛집</span>을 가리는 토너먼트
+                        오늘 뭐 먹지? 여기서 픽하자.<br>
+                        <span id="home-region-title" class="text-brand-orange">성수</span> 맛집 실시간 투표에 한 표 얹기
                     </h1>
                     <p class="text-gray-400 text-sm sm:text-base">
-                        사은품 이벤트 개입 Zero! 팬심과 맛으로 겨루는 1:1 이상형 월드컵.<br class="hidden sm:block">
-                        당신의 한 표로 성수동 맛집 S티어가 결정됩니다.
+                        고민은 짧게, 픽은 확실하게. 취향 가는 맛집에 바로 투표해요.<br class="hidden sm:block">
+                        사람들이 지금 선택하는 <span id="hero-region-copy">성수</span> 맛집 흐름을 같이 만들어봐요.
                     </p>
                 </div>
                 <div class="relative z-10 flex-shrink-0">
@@ -128,11 +179,14 @@
             <div>
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-fire text-brand-orange"></i> 진행 중인 토너먼트
+                        <i class="fa-solid fa-fire text-brand-orange"></i> 지금 투표 열림 · 지역 선택
                     </h2>
-                    <span class="text-xs text-gray-500">1일 1회 소셜 인증 투표</span>
+                    <span class="text-xs text-gray-500 flex items-center gap-1">
+                        <i class="fa-solid fa-location-dot text-brand-neon"></i> <span id="active-region-caption">지금 참여 가능한 지역 투표</span>
+                    </span>
                 </div>
 
+                <p class="text-xs text-gray-400 mb-2">📍 지금 투표가 진행 중인 지역</p><div class="flex flex-wrap gap-2 mb-4" id="home-region-filters"></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="category-cards-container">
                     <!-- Cards will be populated by JS -->
                 </div>
@@ -142,180 +196,389 @@
             <div class="p-4 rounded-xl bg-brand-card/50 border border-brand-border text-xs text-gray-400 flex items-start gap-3">
                 <i class="fa-solid fa-circle-info text-brand-orange text-base mt-0.5"></i>
                 <div class="space-y-1">
-                    <p class="font-bold text-gray-300">어뷰징 방지 및 공정 투표 시스템 안내</p>
-                    <p>본 서비스는 네이버/카카오 영수증 이벤트 등 외부 사은품 개입을 차단합니다. 동일 IP 및 무분별한 중복 투표는 시스템에 의해 실시간 제한되며, 소셜 계정당 1일 1회 투표권이 부여됩니다.</p>
+                    <p class="font-bold text-gray-300">한 표씩 쌓이는 <span id="notice-region-title">성수</span>의 맛 취향</p>
+                    <p>마음에 드는 메뉴를 탭해 투표하세요. 누적 선택 결과는 맛집 랭킹과 티어에 반영됩니다. (현재 투표 데이터는 이 브라우저에 저장돼요.)</p>
                 </div>
             </div>
         </section>
 
 
-        <!-- ================= VIEW 2: GAME (1:1 Tournament Match) ================= -->
+        <!-- ================= USER VIEW 2: GAME (1:1 Tournament Match) ================= -->
         <section id="view-game" class="hidden space-y-6">
-            <!-- Tournament Info Header & Progress Bar -->
-            <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-3">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <button onclick="confirmExitGame()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1 mb-1">
-                            <i class="fa-solid fa-arrow-left"></i> 목록으로
-                        </button>
-                        <h2 id="game-title" class="text-lg font-bold text-white">성수동 감자탕 Top 8</h2>
-                    </div>
-                    <div class="text-right">
-                        <span id="game-round-badge" class="px-3 py-1 rounded-full bg-brand-orange/20 text-brand-orange font-black text-sm border border-brand-orange/30">
-                            8강전 (1/4)
-                        </span>
-                    </div>
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-5 sm:p-7">
+                <button onclick="confirmExitGame()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1 mb-4"><i class="fa-solid fa-arrow-left"></i> 투표 목록</button>
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div><p id="poll-region-label" class="text-xs font-bold text-brand-neon mb-1"></p><h2 id="game-title" class="text-2xl font-black text-white">식당 픽 투표</h2></div>
+                    <span id="poll-vote-count" class="text-xs text-gray-400"></span>
                 </div>
-
-                <!-- Progress Bar -->
-                <div class="w-full bg-brand-dark rounded-full h-2.5 overflow-hidden border border-brand-border">
-                    <div id="game-progress-bar" class="bg-gradient-to-r from-brand-orange to-brand-yellow h-2.5 rounded-full transition-all duration-300" style="width: 25%"></div>
-                </div>
+                <p class="text-sm text-gray-400 mt-2">가고 싶은 식당에 픽! 투표 후에는 현재 득표 현황을 볼 수 있어요.</p>
             </div>
-
-            <!-- VS Match Area (2 Cards Side-by-Side or Stacked) -->
-            <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 my-4">
-                <!-- VS Badge Floating in Center -->
-                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full vs-badge text-black font-black text-lg sm:text-2xl flex items-center justify-center shadow-2xl border-4 border-brand-dark animate-bounce">
-                        VS
-                    </div>
-                </div>
-
-                <!-- Match Card 1 -->
-                <div id="card-0" onclick="selectCandidate(0)" class="group cursor-pointer bg-brand-card border-2 border-brand-border hover:border-brand-orange rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between">
-                    <div class="relative h-52 sm:h-64 overflow-hidden">
-                        <img id="card-0-img" src="" alt="맛집 이미지" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-transparent to-transparent"></div>
-                        <span id="card-0-seed" class="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-gray-300 text-xs font-bold rounded-md">
-                            후보 A
-                        </span>
-                    </div>
-                    <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <h3 id="card-0-name" class="text-xl font-black text-white group-hover:text-brand-orange transition-colors">맛집 이름 1</h3>
-                                <span id="card-0-menu-tag" class="text-xs px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">대표메뉴</span>
-                            </div>
-                            <p id="card-0-desc" class="text-sm text-gray-400 mt-2 line-clamp-2">맛집 한 줄 요약 특징 설명이 들어가는 자리입니다.</p>
-                        </div>
-                        <div class="pt-2 border-t border-brand-border/50 flex items-center justify-between text-xs text-gray-500">
-                            <span><i class="fa-solid fa-utensils text-brand-orange"></i> <span id="card-0-menu">대표 메뉴</span></span>
-                            <span><i class="fa-solid fa-star text-brand-yellow"></i> 실시간 평점 Top</span>
-                        </div>
-                        <button class="w-full py-3 rounded-xl bg-brand-border group-hover:bg-brand-orange group-hover:text-white text-gray-300 font-bold transition-all text-sm flex items-center justify-center gap-2">
-                            <span>선택하기</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Match Card 2 -->
-                <div id="card-1" onclick="selectCandidate(1)" class="group cursor-pointer bg-brand-card border-2 border-brand-border hover:border-brand-orange rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col justify-between">
-                    <div class="relative h-52 sm:h-64 overflow-hidden">
-                        <img id="card-1-img" src="" alt="맛집 이미지" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-brand-card via-transparent to-transparent"></div>
-                        <span id="card-1-seed" class="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-md text-gray-300 text-xs font-bold rounded-md">
-                            후보 B
-                        </span>
-                    </div>
-                    <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <h3 id="card-1-name" class="text-xl font-black text-white group-hover:text-brand-orange transition-colors">맛집 이름 2</h3>
-                                <span id="card-1-menu-tag" class="text-xs px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">대표메뉴</span>
-                            </div>
-                            <p id="card-1-desc" class="text-sm text-gray-400 mt-2 line-clamp-2">맛집 한 줄 요약 특징 설명이 들어가는 자리입니다.</p>
-                        </div>
-                        <div class="pt-2 border-t border-brand-border/50 flex items-center justify-between text-xs text-gray-500">
-                            <span><i class="fa-solid fa-utensils text-brand-orange"></i> <span id="card-1-menu">대표 메뉴</span></span>
-                            <span><i class="fa-solid fa-star text-brand-yellow"></i> 실시간 평점 Top</span>
-                        </div>
-                        <button class="w-full py-3 rounded-xl bg-brand-border group-hover:bg-brand-orange group-hover:text-white text-gray-300 font-bold transition-all text-sm flex items-center justify-center gap-2">
-                            <span>선택하기</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <div id="poll-candidates" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </section>
 
 
-        <!-- ================= VIEW 3: RESULT (Winner & Tier List) ================= -->
-        <section id="view-result" class="hidden space-y-8 animate-fade-in">
-            <!-- Winner Celebration Banner -->
-            <div class="relative bg-gradient-to-b from-brand-card via-brand-dark to-brand-card border-2 border-brand-orange/50 rounded-3xl p-6 sm:p-10 text-center overflow-hidden glow-orange">
-                <div class="absolute -top-12 -left-12 w-32 h-32 bg-brand-orange/20 rounded-full blur-2xl"></div>
-                <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-brand-yellow/20 rounded-full blur-2xl"></div>
+        <section id="view-result" class="hidden"></section>
 
-                <div class="relative z-10 space-y-4">
-                    <span class="inline-block px-4 py-1.5 rounded-full bg-brand-orange text-white font-black text-xs uppercase tracking-widest shadow-lg">
-                        🏆 Tournament Winner 🏆
-                    </span>
-                    <h2 class="text-2xl sm:text-4xl font-black text-white">
-                        내가 꼽은 성수동 최강 맛집 1위!
-                    </h2>
-
-                    <!-- Winner Highlight Card -->
-                    <div class="max-w-md mx-auto my-6 bg-brand-dark border border-brand-orange/40 rounded-2xl overflow-hidden shadow-2xl text-left">
-                        <div class="relative h-56">
-                            <img id="winner-img" src="" alt="우승 맛집" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                            <span class="absolute bottom-3 left-3 text-3xl font-black text-brand-yellow drop-shadow-md">
-                                👑 S Tier
-                            </span>
-                        </div>
-                        <div class="p-5 space-y-2">
-                            <h3 id="winner-name" class="text-2xl font-black text-white">우승 맛집 이름</h3>
-                            <p id="winner-desc" class="text-sm text-gray-300">우승 맛집 한 줄 특징</p>
-                            <p class="text-xs text-brand-orange font-semibold pt-2"><i class="fa-solid fa-location-dot"></i> 성수동 매장 정보 연동 완료</p>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
-                        <button onclick="openShareModal()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-orange to-brand-yellow text-black font-black text-sm shadow-xl hover:opacity-90 transition-all flex items-center gap-2">
-                            <i class="fa-solid fa-share-nodes"></i> 인스타 스토리 카드 만들기
-                        </button>
-                        <button onclick="showView('home')" class="px-5 py-3 rounded-xl bg-brand-card border border-brand-border text-white text-sm font-bold hover:bg-brand-border transition-all">
-                            다른 토너먼트 하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Generated My Tier List -->
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-brand-orange"></i> 방금 완성한 나만의 성수동 티어표
-                    </h3>
-                    <span class="text-xs text-gray-400">토너먼트 선택 결과 반영</span>
-                </div>
-
-                <div class="space-y-3" id="my-tierlist-container">
-                    <!-- S, A, B, C Tier Rows dynamically generated -->
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ================= VIEW 4: OVERALL TIERLIST ================= -->
+        <!-- ================= USER VIEW 4: TIERLIST (Overall & Category Tiers) ================= -->
         <section id="view-tierlist" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-border pb-4">
+            <!-- Tierlist Header & Main Mode Switcher -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-border pb-4">
                 <div>
                     <h2 class="text-2xl font-black text-white flex items-center gap-2">
-                        <i class="fa-solid fa-trophy text-brand-yellow"></i> 성수동 종합 맛집 티어리스트
+                        <i class="fa-solid fa-trophy text-brand-yellow"></i> <span id="tier-region-title">성수</span> 맛집 실시간 랭킹
                     </h2>
-                    <p class="text-xs text-gray-400 mt-1">유저들의 실시간 토너먼트 누적 투표 결과 기반 S~D 등급표</p>
+                    <p class="text-xs text-gray-400 mt-1">참여자들의 선택이 쌓여 만드는 맛집 랭킹</p>
                 </div>
-                <!-- Category Filter -->
-                <div class="flex gap-2 overflow-x-auto pb-1" id="tier-filter-buttons">
-                    <!-- Dynamic category filters -->
+
+                <!-- Tier Display Mode Selector (Overall Global Tier vs By Category) -->
+                <div class="flex items-center gap-1.5 bg-brand-card p-1 rounded-xl border border-brand-border text-xs font-bold">
+                    <button onclick="switchTierMode('overall')" id="tier-mode-overall-btn" class="px-3.5 py-2 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-globe"></i> <span>전체 메뉴 랭킹</span>
+                    </button>
+                    <button onclick="switchTierMode('category')" id="tier-mode-category-btn" class="px-3.5 py-2 rounded-lg bg-brand-orange text-white transition-all flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-utensils"></i> <span>메뉴별 랭킹</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Tier Table -->
-            <div class="space-y-4" id="overall-tier-container">
+            <!-- Category Filter Buttons Bar (Only visible in 'category' mode) -->
+            <div id="tier-category-filter-wrapper" class="space-y-2">
+                <span class="text-xs font-bold text-gray-400 block"><i class="fa-solid fa-filter text-brand-orange"></i> 메뉴 카테고리 선택</span>
+                <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar" id="tier-category-buttons">
+                    <!-- Category buttons populated by JS -->
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2" id="tier-region-filters"></div>
+            <!-- Tier Table Container -->
+            <div class="space-y-4" id="tierlist-cards-container">
                 <!-- Tier Rows populated by JS -->
+            </div>
+        </section>
+
+
+        <!-- ================= VIEW 5: ADMIN DASHBOARD (Admin Console) ================= -->
+        <section id="view-admin" class="hidden space-y-6 animate-fade-in">
+            <!-- Admin Top Navigation Bar -->
+            <div class="bg-brand-card border border-indigo-500/30 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl admin-badge flex items-center justify-center text-white text-2xl shadow-lg flex-shrink-0">
+                        <i class="fa-solid fa-gear"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-xl font-black text-white">맛집 픽 관리자 콘솔</h2>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">MOCK v1.0</span>
+                        </div>
+                        <p class="text-xs text-gray-400">투표 주제와 맛집 관리, 네이버 링크 및 투표 통계 모니터링</p>
+                    </div>
+                </div>
+
+                <!-- Admin Action Quick Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="openAddTournamentModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-plus"></i> 새 투표 개설
+                    </button>
+                    <button onclick="openAddCandidateModal()" class="px-3.5 py-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-utensils"></i> 새 맛집 등록
+                    </button>
+                    <button onclick="switchToUserView()" class="px-3.5 py-2 rounded-xl bg-brand-border hover:bg-gray-700 text-gray-200 font-bold text-xs transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> 사용자 화면
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Tabs Navigation -->
+            <div class="flex gap-2 border-b border-brand-border overflow-x-auto pb-2 custom-scrollbar">
+                <button onclick="switchAdminTab('stats')" id="tab-btn-stats" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white transition-all flex items-center gap-2 whitespace-nowrap shadow-md">
+                    <i class="fa-solid fa-chart-line"></i> 대시보드 & 종합 통계
+                </button>
+                <button onclick="switchAdminTab('tournaments')" id="tab-btn-tournaments" class="px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-brand-card text-gray-400 hover:text-white border border-brand-border transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-trophy"></i> 투표 관리 (후보별 득표 집계)
+                </button>
+                <button onclick="switchAdminTab('candidates')" id="tab-btn-candidates" class="px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-brand-card text-gray-400 hover:text-white border border-brand-border transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-store"></i> 식당 / 네이버링크 편집
+                </button>
+                <button onclick="switchAdminTab('system')" id="tab-btn-system" class="px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-brand-card text-gray-400 hover:text-white border border-brand-border transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-sliders"></i> 시스템 설정 & 백엔드 연동
+                </button>
+            </div>
+
+            <!-- ADMIN TAB 1: DASHBOARD & STATISTICS -->
+            <div id="admin-tab-stats" class="space-y-6">
+                <!-- KPI Stat Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-1">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>총 누적 투표수</span>
+                            <i class="fa-solid fa-check-to-slot text-brand-orange"></i>
+                        </div>
+                        <div id="stat-total-votes" class="text-2xl font-black text-white">0</div>
+                        <div class="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+                            <i class="fa-solid fa-arrow-trend-up"></i> 오늘 +<span id="stat-today-votes">0</span>건 발생
+                        </div>
+                    </div>
+
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-1">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>진행 중 투표</span>
+                            <i class="fa-solid fa-fire text-brand-yellow"></i>
+                        </div>
+                        <div id="stat-active-tournaments" class="text-2xl font-black text-white">0</div>
+                        <div class="text-[11px] text-gray-400">총 <span id="stat-total-tournaments">0</span>개 개설됨</div>
+                    </div>
+
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-1">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>등록된 맛집 수</span>
+                            <i class="fa-solid fa-utensils text-emerald-400"></i>
+                        </div>
+                        <div id="stat-total-candidates" class="text-2xl font-black text-white">0</div>
+                        <div class="text-[11px] text-emerald-400">네이버 지도 링크 100% 연동</div>
+                    </div>
+
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-4 space-y-1">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>어뷰징 방지 차단율</span>
+                            <i class="fa-solid fa-shield text-indigo-400"></i>
+                        </div>
+                        <div class="text-2xl font-black text-white">99.8%</div>
+                        <div class="text-[11px] text-indigo-300">중복 IP / 매크로 차단 중</div>
+                    </div>
+                </div>
+
+                <!-- Charts & Graphs Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left: Category Distribution Chart -->
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-5 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-brand-orange"></i> 카테고리별 투표 참여율
+                            </h3>
+                            <span class="text-[11px] text-gray-400">실시간 누적</span>
+                        </div>
+                        <div class="relative h-56 flex items-center justify-center">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Center & Right: Daily Trends & Tournament Comparison -->
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-5 space-y-3 lg:col-span-2">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-indigo-400"></i> 최근 일자별 투표 트렌드 (Mock)
+                            </h3>
+                            <button onclick="injectSampleVotes()" class="text-[11px] px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-bolt"></i> 가상 투표 50건 주입 테스트
+                            </button>
+                        </div>
+                        <div class="relative h-56">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Ranked Restaurants & Live Vote Activity Feed -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Top Winning Candidates -->
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-5 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-crown text-brand-yellow"></i> 실시간 맛집 득표 랭킹 TOP 5
+                            </h3>
+                            <span class="text-xs text-gray-400">누적 투표 수 기준</span>
+                        </div>
+                        <div class="space-y-2.5" id="admin-top-candidates-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Live Vote Activity Feed -->
+                    <div class="bg-brand-card border border-brand-border rounded-xl p-5 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-wave-square text-emerald-400"></i> 실시간 투표 활동 로그 (Audit Log)
+                            </h3>
+                            <button onclick="clearVoteLogs()" class="text-[11px] text-gray-500 hover:text-gray-300">
+                                로그 비우기
+                            </button>
+                        </div>
+                        <div class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1" id="admin-live-logs-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 2: TOURNAMENTS MANAGEMENT -->
+            <div id="admin-tab-tournaments" class="hidden space-y-5">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-brand-card border border-brand-border p-4 rounded-xl">
+                    <div>
+                        <h3 class="font-bold text-white text-base">지역별 투표 관리</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">맛집을 추가·삭제하고 지역별 투표를 관리합니다.</p>
+                    </div>
+                    <button onclick="openAddTournamentModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-plus"></i> 신규 투표 추가
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 bg-brand-card border border-brand-border p-3 rounded-xl">
+                    <div id="admin-region-tabs" class="flex flex-wrap gap-2" role="tablist" aria-label="지역별 투표"></div>
+                    <span class="hidden sm:inline text-[11px] text-gray-500">투표 주제는 지역에 연결되어 관리됩니다.</span>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <input id="admin-new-region" type="text" placeholder="새 지역명" class="w-32 bg-brand-dark border border-brand-border rounded-lg px-3 py-1.5 text-xs text-white">
+                        <button onclick="addAdminRegion()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">지역 추가</button>
+                    </div>
+                </div>
+                <div id="admin-regions-list" class="flex flex-wrap gap-2"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="admin-tournaments-list-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 3: CANDIDATES MANAGEMENT (RESTAURANTS & NAVER LINK) -->
+            <div id="admin-tab-candidates" class="hidden space-y-5">
+                <!-- Filter & Action Bar -->
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-brand-card border border-brand-border p-4 rounded-xl">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="text-xs font-bold text-gray-300">투표 선택:</label>
+                        <select id="admin-candidate-filter-select" onchange="renderAdminCandidatesList()" class="bg-brand-dark border border-brand-border rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <span id="admin-candidate-count-badge" class="text-[11px] px-2.5 py-1 rounded bg-brand-border text-brand-yellow font-bold">
+                            Top 8 (총 8개 맛집)
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="openAddCandidateModal()" class="px-4 py-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-plus"></i> 선택된 투표에 맛집 추가
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Candidates Table / Card Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="admin-candidates-grid-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 4: SYSTEM & BACKEND INTEGRATION SETTINGS -->
+            <div id="admin-tab-system" class="hidden space-y-6">
+                <!-- Backend API Integration Preview Card -->
+                <div class="bg-brand-card border border-indigo-500/40 rounded-2xl p-5 space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-server"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-base">백엔드 API 연동 환경 설정</h3>
+                                <p class="text-xs text-gray-400">현재는 브라우저 LocalStorage 기반 Mock으로 작동 중입니다. 추후 백엔드 API 주소를 설정하면 바로 전환됩니다.</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            MOCK MODE
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-300">백엔드 Base API URL</label>
+                            <input type="text" id="setting-api-url" value="https://api.seongsu-food.kr/v1" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <p class="text-[11px] text-gray-500">Spring Boot, FastAPI, Express 등 백엔드 서버 엔드포인트</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-gray-300">인증 방식 (Authentication)</label>
+                            <select id="setting-auth-mode" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                <option value="jwt">JWT Bearer Token (권장: Authorization Header)</option>
+                                <option value="cookie">HttpOnly Secure Cookie (세션 방식)</option>
+                                <option value="mock" selected>Mock Local Storage (현재 프론트엔드 모의)</option>
+                            </select>
+                            <p class="text-[11px] text-gray-500">관리자/일반 사용자 로그인 토큰 검증 규격</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-brand-border">
+                        <button onclick="openBackendGuideModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1.5">
+                            <i class="fa-solid fa-book-open"></i> 백엔드 API 명세 및 구현 가이드 보기
+                        </button>
+                        <button onclick="saveSystemSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
+                            설정 저장하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Abuse Prevention & Voting Policy Settings -->
+                <div class="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-brand-orange/20 text-brand-orange flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-base">투표 정책 및 어뷰징 방지 옵션</h3>
+                            <p class="text-xs text-gray-400">사은품 어뷰징 및 매크로 공격을 방지하기 위한 보안 설정</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <div class="p-3.5 bg-brand-dark rounded-xl border border-brand-border space-y-2">
+                            <span class="text-xs font-bold text-white block">1일 투표 횟수 제한</span>
+                            <select id="setting-vote-limit" class="w-full bg-brand-card border border-brand-border rounded-lg px-2.5 py-1.5 text-xs text-white">
+                                <option value="1" selected>카테고리당 1일 1회 (엄격)</option>
+                                <option value="3">카테고리당 1일 3회</option>
+                                <option value="unlimited">무제한 (테스트용)</option>
+                            </select>
+                            <span class="text-[10px] text-gray-500 block">공정한 랭킹 유지를 위한 기본값</span>
+                        </div>
+
+                        <div class="p-3.5 bg-brand-dark rounded-xl border border-brand-border space-y-2">
+                            <span class="text-xs font-bold text-white block">중복 투표 판별 기준</span>
+                            <select id="setting-ip-check" class="w-full bg-brand-card border border-brand-border rounded-lg px-2.5 py-1.5 text-xs text-white">
+                                <option value="strict" selected>IP + 디바이스 핑거프린트 + 소셜 계정</option>
+                                <option value="account">소셜 계정 기준만</option>
+                                <option value="none">검증 안함</option>
+                            </select>
+                            <span class="text-[10px] text-gray-500 block">영수증/체험단 조직적 개입 차단</span>
+                        </div>
+
+                        <div class="p-3.5 bg-brand-dark rounded-xl border border-brand-border space-y-2">
+                            <span class="text-xs font-bold text-white block">투표 후보 표시 수</span>
+                            <select id="setting-default-round" class="w-full bg-brand-card border border-brand-border rounded-lg px-2.5 py-1.5 text-xs text-white">
+                                <option value="8" selected>8개 맛집 후보</option>
+                                <option value="16">16개 맛집 후보</option>
+                                <option value="4">4개 맛집 후보</option>
+                            </select>
+                            <span class="text-[10px] text-gray-500 block">신규 개설 기본 프리셋</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Backup, Restore & Reset Section -->
+                <div class="bg-brand-card border border-red-500/20 rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-base">데이터 백업 / 복원 및 공장 초기화</h3>
+                            <p class="text-xs text-gray-400">현재 로컬 브라우저에 저장된 투표 및 식당 데이터를 백업하거나 초기 상태로 복구합니다.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                        <button onclick="exportDataJSON()" class="px-4 py-2.5 rounded-xl bg-brand-border hover:bg-gray-700 text-white font-bold text-xs transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-export"></i> 데이터 JSON으로 내보내기
+                        </button>
+                        <label class="px-4 py-2.5 rounded-xl bg-brand-border hover:bg-gray-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-file-import"></i> JSON 데이터 불러오기
+                            <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                        </label>
+                        <button onclick="confirmResetToDefault()" class="px-4 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs transition-all flex items-center gap-1.5 ml-auto">
+                            <i class="fa-solid fa-rotate-left"></i> 초기 예시 데이터로 리셋
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -370,7 +633,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded bg-orange-500 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0">A</span>
-                        <span id="story-tier-a" class="text-gray-300 truncate">소문난성수감자탕 외 1개</span>
+                        <span id="story-tier-a" class="text-gray-300 truncate">성수육칼</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded bg-yellow-500 text-black font-black text-[10px] flex items-center justify-center flex-shrink-0">B</span>
@@ -380,7 +643,7 @@
 
                 <!-- Card Footer Branding -->
                 <div class="relative z-10 border-t border-white/10 pt-2 flex justify-between items-center text-[10px] text-gray-400">
-                    <span>@성수동맛집왕좌의게임</span>
+                    <span>@맛집픽</span>
                     <span class="text-brand-orange font-bold">seongsu-food.kr</span>
                 </div>
             </div>
@@ -398,7 +661,7 @@
     </div>
 
 
-    <!-- ================= MODAL 2: SOCIAL LOGIN SIMULATION ================= -->
+    <!-- ================= MODAL 2: USER & ADMIN LOGIN MODAL ================= -->
     <div id="modal-login" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 space-y-5 relative">
             <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
@@ -409,22 +672,320 @@
                 <div class="w-12 h-12 mx-auto rounded-full vs-badge flex items-center justify-center text-xl font-black text-black">
                     👑
                 </div>
-                <h3 class="text-lg font-bold text-white">공정 투표를 위한 소셜 로그인</h3>
-                <p class="text-xs text-gray-400">어뷰징 방지 및 1일 1회 실질 투표 반영을 위해 소셜 계정 인증이 필요합니다.</p>
+                <h3 class="text-lg font-bold text-white">맛집 픽 로그인</h3>
+                <p class="text-xs text-gray-400">사용자 계정 또는 관리자 계정으로 접속할 수 있습니다.</p>
             </div>
 
-            <div class="space-y-2.5 pt-2">
-                <button onclick="simulatedLogin('카카오')" class="w-full py-3 rounded-xl bg-[#FEE500] text-[#191919] font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+            <!-- Login Tabs -->
+            <div class="flex rounded-xl bg-brand-dark p-1 border border-brand-border text-xs font-bold">
+                <button onclick="switchLoginTab('user')" id="login-tab-user-btn" class="flex-1 py-2 rounded-lg bg-brand-orange text-white transition-all">
+                    일반 사용자
+                </button>
+                <button onclick="switchLoginTab('admin')" id="login-tab-admin-btn" class="flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all">
+                    관리자(Admin)
+                </button>
+            </div>
+
+            <!-- USER LOGIN FORM -->
+            <div id="login-form-user" class="space-y-2.5 pt-1">
+                <p class="text-xs text-gray-400 text-center pb-1">소셜 계정 인증으로 오늘 투표권을 획득하세요.</p>
+                <button onclick="simulatedLogin('kakao')" class="w-full py-3 rounded-xl bg-[#FEE500] text-[#191919] font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
                     <i class="fa-solid fa-comment"></i> 카카오로 3초 만에 시작하기
                 </button>
-                <button onclick="simulatedLogin('네이버')" class="w-full py-3 rounded-xl bg-[#03C75A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                <button onclick="simulatedLogin('naver')" class="w-full py-3 rounded-xl bg-[#03C75A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
                     <i class="fa-solid fa-N"></i> 네이버로 시작하기
                 </button>
             </div>
 
+            <!-- ADMIN LOGIN FORM -->
+            <div id="login-form-admin" class="hidden space-y-3 pt-1">
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-300 block mb-1">관리자 아이디</label>
+                        <input type="text" id="admin-login-id" value="admin" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-300 block mb-1">비밀번호</label>
+                        <input type="password" id="admin-login-pw" value="1234" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <button onclick="submitAdminLogin()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-shield-halved"></i> 관리자 로그인
+                </button>
+
+                <div class="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-[11px] text-indigo-300 space-y-1">
+                    <div class="font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i> 프론트엔드 모의 테스트 안내
+                    </div>
+                    <p>현재 백엔드 연동 전이므로 아이디: <code class="text-white font-mono">admin</code> / 암호: <code class="text-white font-mono">1234</code>로 바로 로그인 가능합니다.</p>
+                </div>
+            </div>
+
             <p class="text-[11px] text-gray-500 text-center">
-                로그인 시 본 서비스의 개인정보 처리방침에 동의하게 됩니다.
+                로그인 시 서비스 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
             </p>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 3: TOURNAMENT EDIT / CREATE MODAL ================= -->
+    <div id="modal-tournament" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-md w-full p-6 space-y-4 relative">
+            <button onclick="closeTournamentModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl admin-badge flex items-center justify-center text-white text-lg">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <h3 id="modal-tournament-title" class="text-lg font-bold text-white">지역 투표 수정</h3>
+                    <p class="text-xs text-gray-400">투표 기본 정보 및 표시 속성을 설정합니다.</p>
+                </div>
+            </div>
+
+            <form id="form-tournament" onsubmit="handleSaveTournament(event)" class="space-y-3 pt-2">
+                <input type="hidden" id="input-tournament-id">
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-300 block mb-1">투표 고유 식별자 (ID)</label>
+                    <input type="text" id="input-tournament-key" required placeholder="예: burger, coffee, meat" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-300 block mb-1" for="input-tournament-region">서비스 지역</label>
+                    <select id="input-tournament-region" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"></select>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-bold text-gray-300">투표 주제</label>
+                        <span class="text-[11px] text-indigo-300 font-semibold">투표 목록에 노출할 메뉴 중심 분류를 입력하세요</span>
+                    </div>
+                    <input type="text" id="input-tournament-name" required placeholder="예: 라멘, 돈가스, 국밥, 소금빵" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-300 block mb-1">한 줄 설명</label>
+                    <input type="text" id="input-tournament-desc" required placeholder="예: 패티의 육즙과 번의 풍미가 폭발하는 수제버거 맛집 투표" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-300 block mb-1">대표 이모지/아이콘</label>
+                        <input type="text" id="input-tournament-icon" value="🍔" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 text-center text-base">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-300 block mb-1">뱃지 라벨</label>
+                        <input type="text" id="input-tournament-badge" value="인기 폭발" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2 border-t border-brand-border">
+                    <button type="button" onclick="closeTournamentModal()" class="px-4 py-2 rounded-xl bg-brand-border text-gray-300 hover:text-white text-xs font-semibold">
+                        취소
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md">
+                        저장하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 4: CANDIDATE (RESTAURANT & NAVER LINK) EDIT / CREATE MODAL ================= -->
+    <div id="modal-candidate" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-lg w-full p-6 space-y-4 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeCandidateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-orange/20 text-brand-orange flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-utensils"></i>
+                </div>
+                <div>
+                    <h3 id="modal-candidate-title" class="text-lg font-bold text-white">맛집(후보) 정보 관리</h3>
+                    <p class="text-xs text-gray-400">투표에 출전할 식당 정보 및 네이버 플레이스 링크를 편집합니다.</p>
+                </div>
+            </div>
+
+            <form id="form-candidate" onsubmit="handleSaveCandidate(event)" class="space-y-3 pt-2">
+                <input type="hidden" id="input-candidate-id">
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-300 block mb-1">소속 투표</label>
+                    <select id="input-candidate-tournament" required class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-300 block mb-1">식당(맛집) 명</label>
+                        <input type="text" id="input-candidate-name" required placeholder="예: 성수다락" oninput="handleCandidateNameChange(this.value)" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-300 block mb-1">대표 시그니처 메뉴</label>
+                        <input type="text" id="input-candidate-menu" required placeholder="예: 오므라이스 / 매콤크림파스타" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange">
+                    </div>
+                </div>
+
+                <!-- Naver Map Link Field -->
+                <div class="p-3 bg-brand-dark rounded-xl border border-brand-border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded bg-[#03C75A] text-white flex items-center justify-center text-[10px] font-black">N</span>
+                            네이버 플레이스 / 지도 바로가기 링크
+                        </label>
+                        <button type="button" onclick="autoGenerateNaverLink()" class="text-[11px] text-[#03C75A] hover:underline font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 링크 자동완성
+                        </button>
+                    </div>
+                    <input type="url" id="input-candidate-naver" placeholder="https://map.naver.com/p/search/..." class="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#03C75A] font-mono">
+                    <p class="text-[10px] text-gray-500">사용자가 해당 맛집의 네이버 지도 상세 정보(위치, 영업시간, 영수증 리뷰)를 바로 확인할 수 있습니다.</p>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-300 block mb-1">한 줄 매장 설명 및 특징</label>
+                    <textarea id="input-candidate-desc" required rows="2" placeholder="예: 폭신한 오므라이스와 매콤한 크림 파스타의 정석 조합 성지" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange"></textarea>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-bold text-gray-300">대표 사진 이미지 URL</label>
+                        <span class="text-[11px] text-gray-500">Unsplash 등 고화질 이미지</span>
+                    </div>
+                    <input type="url" id="input-candidate-img" required placeholder="https://images.unsplash.com/..." oninput="previewCandidateImage(this.value)" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-orange font-mono">
+                </div>
+
+                <!-- Image Quick Preset Helper -->
+                <div class="space-y-1.5 pt-1">
+                    <span class="text-[11px] text-gray-400 font-semibold block">빠른 음식 사진 프리셋 (클릭 시 자동 적용)</span>
+                    <div class="flex flex-wrap gap-1.5" id="preset-image-buttons">
+                        <button type="button" onclick="applyImagePreset('korean')" class="px-2 py-1 bg-brand-border hover:bg-gray-700 text-gray-300 rounded text-[11px]">🍲 한식/국물</button>
+                        <button type="button" onclick="applyImagePreset('pasta')" class="px-2 py-1 bg-brand-border hover:bg-gray-700 text-gray-300 rounded text-[11px]">🍝 양식/파스타</button>
+                        <button type="button" onclick="applyImagePreset('bakery')" class="px-2 py-1 bg-brand-border hover:bg-gray-700 text-gray-300 rounded text-[11px]">🥐 베이커리</button>
+                        <button type="button" onclick="applyImagePreset('burger')" class="px-2 py-1 bg-brand-border hover:bg-gray-700 text-gray-300 rounded text-[11px]">🍔 수제버거</button>
+                        <button type="button" onclick="applyImagePreset('meat')" class="px-2 py-1 bg-brand-border hover:bg-gray-700 text-gray-300 rounded text-[11px]">🥩 고기/구이</button>
+                    </div>
+                </div>
+
+                <!-- Image Preview Area -->
+                <div class="space-y-1">
+                    <span class="text-[11px] text-gray-400 block">이미지 미리보기</span>
+                    <div class="w-full h-32 rounded-xl overflow-hidden bg-brand-dark border border-brand-border flex items-center justify-center">
+                        <img id="candidate-preview-img" src="" alt="미리보기" class="w-full h-full object-cover hidden">
+                        <span id="candidate-preview-placeholder" class="text-xs text-gray-600">유효한 이미지 URL을 입력하면 여기에 미리보기가 나타납니다.</span>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2 border-t border-brand-border">
+                    <button type="button" onclick="closeCandidateModal()" class="px-4 py-2 rounded-xl bg-brand-border text-gray-300 hover:text-white text-xs font-semibold">
+                        취소
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-xs shadow-md">
+                        저장하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 5: BACKEND INTEGRATION SPECIFICATION GUIDE ================= -->
+    <div id="modal-backend-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-indigo-500/40 rounded-2xl max-w-2xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onclick="closeBackendGuideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">향후 백엔드 API 연동 구조 & 명세 가이드</h3>
+                    <p class="text-xs text-gray-400">현재 프론트엔드 모듈은 아래 REST API 명세와 1:1 호환되도록 설계되어 있습니다.</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Architecture Diagram -->
+                <div class="p-3.5 rounded-xl bg-brand-dark border border-brand-border space-y-2">
+                    <span class="font-bold text-indigo-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-diagram-project"></i> 권한 및 화면 분리 아키텍처
+                    </span>
+                    <p class="text-gray-300 leading-relaxed">
+                        • <strong>인증 (Auth):</strong> 사용자가 로그인하면 백엔드는 JWT Access Token과 User Object <code class="text-brand-orange font-mono">{ role: 'admin' | 'user', username, ... }</code>를 반환합니다.<br>
+                        • <strong>라우팅 분기:</strong> <code class="text-indigo-300 font-mono">role === 'admin'</code>이면 즉시 관리자 대시보드(<code class="text-gray-300 font-mono">#view-admin</code>)가 렌더링되고, <code class="text-emerald-400 font-mono">role === 'user'</code>이면 메인 투표 화면이 열립니다.<br>
+                        • <strong>데이터 통신:</strong> 현재 프론트엔드의 <code class="text-brand-yellow font-mono">DataService</code> 및 <code class="text-brand-yellow font-mono">StatsService</code>가 백엔드 API 호출로 즉시 치환되도록 모듈화되어 있습니다.
+                    </p>
+                </div>
+
+                <!-- API Endpoints Table -->
+                <div class="space-y-2">
+                    <span class="font-bold text-white">주요 REST API 엔드포인트 명세 (준비 완료)</span>
+                    <div class="border border-brand-border rounded-xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-brand-dark text-gray-400 text-[11px]">
+                                <tr>
+                                    <th class="p-2.5">Method</th>
+                                    <th class="p-2.5">Endpoint</th>
+                                    <th class="p-2.5">권한</th>
+                                    <th class="p-2.5">설명</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-brand-border font-mono text-[11px]">
+                                <tr>
+                                    <td class="p-2 text-emerald-400 font-bold">POST</td>
+                                    <td class="p-2 text-gray-200">/api/v1/auth/login</td>
+                                    <td class="p-2 text-gray-400">All</td>
+                                    <td class="p-2 text-gray-300 font-sans">사용자 및 관리자 계정 로그인, JWT 발급</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 text-blue-400 font-bold">GET</td>
+                                    <td class="p-2 text-gray-200">/api/v1/tournaments</td>
+                                    <td class="p-2 text-gray-400">All</td>
+                                    <td class="p-2 text-gray-300 font-sans">투표 목록 및 후보 맛집(네이버 링크 포함) 조회</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 text-indigo-400 font-bold">POST/PUT</td>
+                                    <td class="p-2 text-gray-200">/api/v1/tournaments</td>
+                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
+                                    <td class="p-2 text-gray-300 font-sans">관리자: 투표 생성 및 수정</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 text-indigo-400 font-bold">POST/PUT</td>
+                                    <td class="p-2 text-gray-200">/api/v1/candidates</td>
+                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
+                                    <td class="p-2 text-gray-300 font-sans">관리자: 맛집 추가 및 정보(이름, 메뉴, 사진, 네이버링크) 수정</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 text-emerald-400 font-bold">POST</td>
+                                    <td class="p-2 text-gray-200">/api/v1/votes/record</td>
+                                    <td class="p-2 text-gray-400">User</td>
+                                    <td class="p-2 text-gray-300 font-sans">지역별 식당 픽 및 메뉴 추가 투표 기록</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 text-blue-400 font-bold">GET</td>
+                                    <td class="p-2 text-gray-200">/api/v1/admin/stats</td>
+                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
+                                    <td class="p-2 text-gray-300 font-sans">관리자: 지역별 누적 득표 및 일별 투표 현황 조회</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 flex justify-end">
+                <button onclick="closeBackendGuideModal()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs">
+                    확인 완료
+                </button>
+            </div>
         </div>
     </div>
 
@@ -437,9 +998,15 @@
 
     <!-- Footer -->
     <footer class="border-t border-brand-border bg-brand-dark py-6 px-4 text-center text-xs text-gray-500">
-        <div class="max-w-5xl mx-auto space-y-2">
-            <p class="font-bold text-gray-400">성수동 맛집 왕좌의 게임 (Seongsu Food Tournament)</p>
-            <p>본 서비스는 유저들의 1:1 토너먼트 투표 데이터를 기반으로 한 공정 티어 플랫폼입니다.</p>
+        <div class="max-w-6xl mx-auto space-y-2">
+            <div class="flex flex-wrap justify-center items-center gap-4 text-gray-400">
+                <span class="font-bold">맛집 픽 · Live Food Vote</span>
+                <span>•</span>
+                <button onclick="switchToAdminView('stats')" class="text-indigo-400 hover:underline">관리자 콘솔 바로가기</button>
+                <span>•</span>
+                <button onclick="openBackendGuideModal()" class="text-gray-400 hover:text-white">API 연동 가이드</button>
+            </div>
+            <p>한 표씩 쌓이는 선택 데이터로 지역별 맛집의 인기 흐름을 보여주는 참여형 랭킹입니다.</p>
             <p class="text-gray-600">© 2026 Seongsu Food Tournament. All rights reserved.</p>
         </div>
     </footer>
@@ -447,356 +1014,923 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // --- DATA STRUCTURES ---
-        const TOURNAMENTS = [
+        // ========================================================
+        // 1. CONFIG & DEFAULT SEED DATA
+        // ========================================================
+        const CONFIG = {
+            STORAGE_KEYS: {
+                DATA: 'FOOD_TOURNAMENT_DATA_V2', // incremented key for schema upgrade
+                STATS: 'FOOD_TOURNAMENT_STATS_V2',
+                LOGS: 'FOOD_TOURNAMENT_LOGS_V2',
+                SETTINGS: 'FOOD_TOURNAMENT_SETTINGS_V2',
+                AUTH: 'FOOD_TOURNAMENT_AUTH_V2'
+            },
+            API_BASE: 'https://api.seongsu-food.kr/v1',
+            USE_MOCK: true // [BACKEND READY]: Set to false when connecting to real backend API
+        };
+
+        const REGION_STORAGE_KEY = "FOOD_REGIONS_V1";
+
+        const DEFAULT_TOURNAMENTS = [
             {
                 id: 'gamjatang',
-                title: '성수동 감자탕 & 국물 Top 8',
-                desc: '성수동의 노포 및 깊은 국물 맛집 진검승부!',
+                region: '성수',
+                title: '감자탕·해장국·국밥',
+                desc: '성수동의 노포 및 깊은 국물 맛집 맛집 투표',
                 badge: '인기 폭발',
                 icon: '🍲',
+                active: true,
                 candidates: [
-                    { id: 1, name: '소문난성수감자탕', desc: '백종원 3대천왕 출신, 성수동 대표 독보적 감자탕', menu: '감자탕 / 우거지', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80' },
-                    { id: 2, name: '성수육칼', desc: '칼칼하고 진한 육개장 칼국수와 수육의 완벽한 조합', menu: '육개장 칼국수', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80' },
-                    { id: 3, name: '뚝섬 한식당', desc: '직장인 성지, 칼칼한 내장탕과 뼈해장국 전문점', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' },
-                    { id: 4, name: '성수순대국', desc: '깔끔한 국물과 꽉 찬 수제 순대의 정석', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80' },
-                    { id: 5, name: '서울숲 곰탕', desc: '맑고 맑은 고기 국물에 대파 듬뿍 노포 스타일', menu: '나주곰탕', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80' },
-                    { id: 6, name: '뚝도시장 해장국', desc: '뚝도쇼핑효소시장 근처 오래된 시원한 선지해장국', menu: '선지해장국', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80' },
-                    { id: 7, name: '성수 설렁탕', desc: '진하게 고아낸 사골 국물과 깍두기 맛집', menu: '설렁탕', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80' },
-                    { id: 8, name: '서울숲 매운갈비찜', desc: '중독성 강한 매콤한 양념과 부드러운 갈비', menu: '매운갈비찜', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' }
+                    { id: 1, name: '소문난성수감자탕', desc: '백종원 3대천왕 출신, 성수동 대표 독보적 감자탕', menu: '감자탕 / 우거지', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%86%8C%EB%AC%B8%EB%82%9C%EC%84%B1%EC%88%98%EA%B0%90%EC%9E%90%ED%83%95', wins: 382, matches: 412 },
+                    { id: 2, name: '성수육칼', desc: '칼칼하고 진한 육개장 칼국수와 수육의 완벽한 조합', menu: '육개장 칼국수', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%9C%A1%EC%88%98', wins: 290, matches: 380 },
+                    { id: 3, name: '뚝섬 한식당', desc: '직장인 성지, 칼칼한 내장탕과 뼈해장국 전문점', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%9A%9D%EC%84%AC%ED%95%9C%EC%8B%9D%EB%8B%B9', wins: 240, matches: 340 },
+                    { id: 4, name: '성수순대국', desc: '깔끔한 국물과 꽉 찬 수제 순대의 정석', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%88%9C%EB%8C%80%EA%B5%AD', wins: 195, matches: 300 },
+                    { id: 5, name: '서울숲 곰탕', desc: '맑고 맑은 고기 국물에 대파 듬뿍 노포 스타일', menu: '나주곰탕', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%EC%8F%B2%EA%B3%B0%ED%83%95', wins: 180, matches: 290 },
+                    { id: 6, name: '뚝도시장 해장국', desc: '뚝도쇼핑효소시장 근처 오래된 시원한 선지해장국', menu: '선지해장국', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%9A%9D%EB%8F%84%EC%8B%9C%EC%9E%A5%ED%95%B4%EC%9E%A5%EA%B5%AD', wins: 150, matches: 270 },
+                    { id: 7, name: '성수 설렁탕', desc: '진하게 고아낸 사골 국물과 깍두기 맛집', menu: '설렁탕', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%84%A4%EB%A0%81%ED%83%95', wins: 130, matches: 260 },
+                    { id: 8, name: '서울숲 매운갈비찜', desc: '중독성 강한 매콤한 양념과 부드러운 갈비', menu: '매운갈비찜', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%EC%8F%B2%EB%A7%A4%EC%9A%B4%EA%B0%88%EB%B9%84%EC%80%9C', wins: 110, matches: 250 }
                 ]
             },
             {
                 id: 'dessert',
-                title: '성수동 디저트 & 베이커리 Top 8',
+                region: '성수',
+                title: '빵·케이크·디저트',
                 desc: '인스타 감성과 감탄 나오는 맛의 디저트 성지',
                 badge: '2030 여성 픽',
                 icon: '🥐',
+                active: true,
                 candidates: [
-                    { id: 101, name: '어니언 성수', desc: '폐공장 개조 핫플, 시그니처 팡도르 대표 베이커리', menu: '팡도르 / 소금빵', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80' },
-                    { id: 102, name: 'Meal° (밀도)', desc: '줄 서서 먹는 식빵 대표 맛집, 촉촉함의 끝판왕', menu: '큐브식빵 / 커스터드', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80' },
-                    { id: 103, name: '로우키 (Lowkey)', desc: '스페셜티 커피와 은은한 케이크의 깊은 풍미', menu: '필터커피 / 파운드', img: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=600&q=80' },
-                    { id: 104, name: '새들러하우스', desc: '크로플 열풍의 주역, 바삭하고 달콤한 크로플', menu: '플레인 크로플', img: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80' },
-                    { id: 105, name: '대림창고', desc: '갤러리 카페의 대명사, 비주얼 독보적 타르트', menu: '딸기 타르트', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?auto=format&fit=crop&w=600&q=80' },
-                    { id: 106, name: '클레멘타인', desc: '꽃과 디저트가 함께하는 감성 플라워 카페', menu: '휘낭시에 / 스콘', img: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=600&q=80' },
-                    { id: 107, name: '자연도 소금빵', desc: '버터 향 풍부한 겉바속촉 극강 소금빵', menu: '소금빵 4개입', img: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80' },
-                    { id: 108, name: '베타서비스', desc: '와인과 어울리는 프렌치 스타일 타파스 디저트', menu: '치즈케이크', img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=600&q=80' }
+                    { id: 101, name: '어니언 성수', desc: '폐공장 개조 핫플, 시그니처 팡도르 대표 베이커리', menu: '팡도르 / 소금빵', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%96%B4%EB%8B%88%EC%96%B8%20%EC%84%B1%EC%88%98', wins: 360, matches: 400 },
+                    { id: 102, name: 'Meal° (밀도)', desc: '줄 서서 먹는 식빵 대표 맛집, 촉촉함의 끝판왕', menu: '큐브식빵 / 커스터드', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B0%80%EB%8F%84%20%EC%84%B1%EC%88%98', wins: 310, matches: 380 },
+                    { id: 103, name: '로우키 (Lowkey)', desc: '스페셜티 커피와 은은한 케이크의 깊은 풍미', menu: '필터커피 / 파운드', img: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%A1%9C%EC%9A%B0%ED%82%A4%20%EC%84%B1%EC%88%98', wins: 260, matches: 330 },
+                    { id: 104, name: '새들러하우스', desc: '크로플 열풍의 주역, 바삭하고 달콤한 크로플', menu: '플레인 크로플', img: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%83%88%EB%93%A4%EB%9F%AC%ED%95%98%EC%9A%B0%EC%8A%A4%20%EC%84%B1%EC%88%98', wins: 230, matches: 310 },
+                    { id: 105, name: '대림창고', desc: '갤러리 카페의 대명사, 비주얼 독보적 타르트', menu: '딸기 타르트', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%8C%80%EB%A6%BC%EC%B0%BD%EA%B3%A0%20%EC%84%B1%EC%88%98', wins: 210, matches: 290 },
+                    { id: 106, name: '클레멘타인', desc: '꽃과 디저트가 함께하는 감성 플라워 카페', menu: '휘낭시에 / 스콘', img: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%ED%81%B4%EB%A0%88%EB%A9%98%ED%83%80%EC%9D%B8', wins: 190, matches: 280 },
+                    { id: 107, name: '자연도 소금빵', desc: '버터 향 풍부한 겉바속촉 극강 소금빵', menu: '소금빵 4개입', img: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%9E%90%EC%97%B0%EB%8F%84%EC%86%8C%EA%B8%88%EB%B9%B5%20%EC%84%B1%EC%88%98', wins: 280, matches: 350 },
+                    { id: 108, name: '베타서비스', desc: '와인과 어울리는 프렌치 스타일 타파스 디저트', menu: '치즈케이크', img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B2%A0%ED%83%80%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%84%B1%EC%88%98', wins: 140, matches: 240 }
                 ]
             },
             {
                 id: 'pasta',
-                title: '성수동 데이트 & 양식 Top 8',
+                region: '성수',
+                title: '파스타·피자·스테이크',
                 desc: '소개팅 성공률 100%! Atmosphere & 맛 보장',
-                badge: '데이트 추천',
+                badge: '파스타 인기',
                 icon: '🍝',
+                active: true,
                 candidates: [
-                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '미쉐린 가이드 선정, 독창적인 고수 파스타', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80' },
-                    { id: 202, name: '오스테리아 잔니', desc: '이탈리안 정통 생면 파스타 전문 다이닝', menu: '트러플 뇨끼', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80' },
-                    { id: 203, name: '성수다락', desc: '매콤 크림 파스타와 폭신한 오므라이스 매력', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80' },
-                    { id: 204, name: '바위파스타바', desc: '예약 전쟁! 생면 파스타 바의 감각적인 선두주자', menu: '생면 파스타 코스', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80' },
-                    { id: 205, name: '쿠냐', desc: '아늑한 분위기에서 즐기는 스테이크와 생면', menu: '살치살 스테이크', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' },
-                    { id: 206, name: '세디치', desc: '깔끔한 와인 파어링과 브런치 전문 레스토랑', menu: '버섯 크림 파스타', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80' },
-                    { id: 207, name: '마리오네', desc: '나폴리 피자 대회 우승 피자장인의 화덕피자', menu: '가리발디 피자', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80' },
-                    { id: 208, name: '보메성수', desc: '높은 층고와 모던 아트가 공존하는 럭셔리 다이닝', menu: '해산물 비앙코', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80' }
+                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '미쉐린 가이드 선정, 독창적인 고수 파스타', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%ED%8Pack피%20%EC%84%B1%EC%88%98', wins: 340, matches: 390 },
+                    { id: 202, name: '오스테리아 잔니', desc: '이탈리안 정통 생면 파스타 전문 다이닝', menu: '트러플 뇨끼', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%98%A4%EC%8A%A4%ED%85%8C%EB%A6%AC%EC%95%84%20%EC%9E%94%EB%8B%88', wins: 300, matches: 370 },
+                    { id: 203, name: '성수다락', desc: '매콤 크림 파스타와 폭신한 오므라이스 매력', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EB%8B%A4%EB%9D%BD', wins: 290, matches: 360 },
+                    { id: 204, name: '바위파스타바', desc: '예약 전쟁! 생면 파스타 바의 감각적인 선두주자', menu: '생면 파스타 코스', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B0%94%EC%9C%84%ED%8C%8C%EC%8A%A4%ED%83%80%EB%B0%94', wins: 270, matches: 330 },
+                    { id: 205, name: '쿠냐', desc: '아늑한 분위기에서 즐기는 스테이크와 생면', menu: '살치살 스테이크', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%BF%A0%EB%83%90', wins: 220, matches: 300 },
+                    { id: 206, name: '세디치', desc: '깔끔한 와인 파어링과 브런치 전문 레스토랑', menu: '버섯 크림 파스타', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%84%B8%EB%94%94%EC%B9%98', wins: 190, matches: 280 },
+                    { id: 207, name: '마리오네', desc: '나폴리 피자 대회 우승 피자장인의 화덕피자', menu: '가리발디 피자', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EB%A7%88%EB%A6%AC%EC%98%A4%EB%84%A4', wins: 240, matches: 310 },
+                    { id: 208, name: '보메성수', desc: '높은 층고와 모던 아트가 공존하는 럭셔리 다이닝', menu: '해산물 비앙코', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B3%B4%EB%A9%94%EC%84%B1%EC%88%98', wins: 170, matches: 260 }
                 ]
             }
         ];
 
-        // --- APP STATE ---
-        let currentTournament = null;
-        let currentRoundList = [];
-        let nextRoundList = [];
-        let currentMatchIndex = 0;
-        let roundName = '8강';
-        let tournamentRankings = []; // Stores eliminated order to build user tier list
-        let myUserTierResult = null;
-
-        // --- INITIALIZATION ---
-        window.onload = function() {
-            renderHomeCategories();
-            renderOverallTierlist();
+        // Image Presets for Quick Adding/Editing
+        const IMAGE_PRESETS = {
+            korean: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80',
+            pasta: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80',
+            bakery: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80',
+            burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80',
+            meat: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'
         };
 
-        // --- VIEW SWITCHER ---
+        // --- TITLE & TOP N AUTOMATION HELPER ---
+        function getTournamentBaseTitle(t) {
+            if (!t || !t.title) return '';
+            // Remove existing 'Top N' pattern cleanly
+            return t.title.replace(/\s*Top\s*\d+/gi, '').trim();
+        }
+
+        function getTournamentDisplayTitle(t) {
+            return getTournamentBaseTitle(t);
+        }
+
+        function getNaverMapUrl(candidate) {
+            if (candidate && candidate.naverUrl && candidate.naverUrl.trim() !== '') {
+                return candidate.naverUrl.trim();
+            }
+            const queryName = candidate ? candidate.name : '';
+            return `https://map.naver.com/p/search/${encodeURIComponent(queryName)}`;
+        }
+
+        // ========================================================
+        // 2. AUTH SERVICE (Role-Based Authentication Mock)
+        // ========================================================
+        const AuthService = {
+            getUser() {
+                try {
+                    const data = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH);
+                    return data ? JSON.parse(data) : null;
+                } catch (e) {
+                    return null;
+                }
+            },
+            setUser(user) {
+                if (user) {
+                    localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH, JSON.stringify(user));
+                } else {
+                    localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH);
+                }
+                this.updateAuthUI();
+            },
+            login(role, username) {
+                const user = {
+                    role: role,
+                    username: username || (role === 'admin' ? '시스템 관리자' : '성수 미식가'),
+                    token: 'mock-jwt-token-' + Date.now(),
+                    loginAt: new Date().toISOString()
+                };
+                this.setUser(user);
+                return user;
+            },
+            logout() {
+                this.setUser(null);
+                showToast('로그아웃되었습니다.');
+                switchToUserView();
+            },
+            isAdmin() {
+                const user = this.getUser();
+                return user && user.role === 'admin';
+            },
+            updateAuthUI() {
+                const user = this.getUser();
+                const container = document.getElementById('auth-nav-container');
+                const roleBadge = document.getElementById('header-role-badge');
+                const adminBanner = document.getElementById('admin-mode-banner');
+
+                if (user) {
+                    if (user.role === 'admin') {
+                        roleBadge.classList.remove('hidden');
+                        adminBanner.classList.remove('hidden');
+                        container.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <span class="hidden sm:inline-block text-xs font-bold text-indigo-300">
+                                    <i class="fa-solid fa-user-shield"></i> ${user.username}
+                                </span>
+                                <button onclick="AuthService.logout()" class="px-2.5 py-1.5 text-xs font-bold bg-brand-border hover:bg-gray-700 text-gray-300 rounded-lg transition-all">
+                                    로그아웃
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        roleBadge.classList.add('hidden');
+                        adminBanner.classList.add('hidden');
+                        container.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <span class="hidden sm:inline-block text-xs font-bold text-brand-orange">
+                                    <i class="fa-solid fa-user-check"></i> ${user.username}
+                                </span>
+                                <button onclick="AuthService.logout()" class="px-2.5 py-1.5 text-xs font-bold bg-brand-border hover:bg-gray-700 text-gray-300 rounded-lg transition-all">
+                                    로그아웃
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    roleBadge.classList.add('hidden');
+                    adminBanner.classList.add('hidden');
+                    container.innerHTML = `
+                        <button onclick="openLoginModal()" class="px-3 py-1.5 text-xs sm:text-sm font-bold border border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white rounded-lg transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-user"></i>
+                            <span>로그인</span>
+                        </button>
+                    `;
+                }
+            }
+        };
+
+        // ========================================================
+        // 3. DATA SERVICE (Backend-Compatible CRUD & LocalStorage)
+        // ========================================================
+        const DataService = {
+            getTournaments() {
+                try {
+                    const data = localStorage.getItem(CONFIG.STORAGE_KEYS.DATA);
+                    if (data) {
+                        const tournaments = JSON.parse(data);
+                        const menuTitles = { gamjatang: '감자탕·해장국·국밥', dessert: '빵·케이크·디저트', pasta: '파스타·피자·스테이크' };
+                        let changed = false;
+                        tournaments.forEach(tournament => {
+                            if (!tournament.region) { tournament.region = '성수'; changed = true; }
+                            const previousTitle = tournament.title || '';
+                            if (menuTitles[tournament.id] && (/감자탕.*국물|디저트.*베이커리|데이트.*양식/.test(previousTitle))) {
+                                tournament.title = menuTitles[tournament.id];
+                                changed = true;
+                            }
+                        });
+                        if (changed) this.saveTournaments(tournaments);
+                        return tournaments;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse tournaments', e);
+                }
+                this.saveTournaments(DEFAULT_TOURNAMENTS);
+                return DEFAULT_TOURNAMENTS;
+            },
+            saveTournaments(tournaments) {
+                localStorage.setItem(CONFIG.STORAGE_KEYS.DATA, JSON.stringify(tournaments));
+            },
+            getTournamentById(id) {
+                const list = this.getTournaments();
+                return list.find(t => t.id === id);
+            },
+            saveTournament(tourneyData) {
+                const list = this.getTournaments();
+                const index = list.findIndex(t => t.id === tourneyData.id);
+                if (index >= 0) {
+                    list[index] = { ...list[index], ...tourneyData };
+                } else {
+                    list.push({
+                        ...tourneyData,
+                        candidates: tourneyData.candidates || []
+                    });
+                }
+                this.saveTournaments(list);
+            },
+            deleteTournament(id) {
+                let list = this.getTournaments();
+                list = list.filter(t => t.id !== id);
+                this.saveTournaments(list);
+            },
+            saveCandidate(tournamentId, candidateData) {
+                const list = this.getTournaments();
+                const tourney = list.find(t => t.id === tournamentId);
+                if (!tourney) return false;
+
+                if (!tourney.candidates) tourney.candidates = [];
+
+                if (candidateData.id) {
+                    const cIdx = tourney.candidates.findIndex(c => c.id === candidateData.id);
+                    if (cIdx >= 0) {
+                        tourney.candidates[cIdx] = { ...tourney.candidates[cIdx], ...candidateData };
+                    } else {
+                        tourney.candidates.push(candidateData);
+                    }
+                } else {
+                    candidateData.id = Date.now();
+                    candidateData.wins = candidateData.wins || 0;
+                    candidateData.matches = candidateData.matches || 0;
+                    tourney.candidates.push(candidateData);
+                }
+
+                this.saveTournaments(list);
+                return true;
+            },
+            deleteCandidate(tournamentId, candidateId) {
+                const list = this.getTournaments();
+                const tourney = list.find(t => t.id === tournamentId);
+                if (!tourney) return false;
+
+                tourney.candidates = (tourney.candidates || []).filter(c => c.id !== candidateId);
+                this.saveTournaments(list);
+                return true;
+            },
+            resetToDefault() {
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.DATA);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.STATS);
+                localStorage.removeItem(CONFIG.STORAGE_KEYS.LOGS);
+                this.saveTournaments(DEFAULT_TOURNAMENTS);
+            }
+        };
+
+        // ========================================================
+        // 4. STATS & LOGGING SERVICE (Audit & Analytics)
+        // ========================================================
+        const StatsService = {
+            getStats() {
+                try {
+                    const data = localStorage.getItem(CONFIG.STORAGE_KEYS.STATS);
+                    if (data) return JSON.parse(data);
+                } catch (e) {}
+
+                const defaultStats = {
+                    totalVotes: 14280,
+                    todayVotes: 234,
+                    dailyTrend: [180, 210, 245, 190, 280, 310, 234]
+                };
+                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(defaultStats));
+                return defaultStats;
+            },
+            recordMenuVote(tournamentId, candidateId, menuName) {
+                const tournaments = DataService.getTournaments();
+                const tournament = tournaments.find(item => item.id === tournamentId);
+                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
+                if (!candidate || !menuName) return false;
+                const menuVoteKey = getMenuVoteKey(tournamentId, candidateId);
+                const myMenuVotes = getMyMenuVotes(tournamentId, candidateId);
+                if (myMenuVotes.includes(menuName)) return false;
+                candidate.menuVotes = candidate.menuVotes || {};
+                candidate.menuVotes[menuName] = (Number(candidate.menuVotes[menuName]) || 0) + 1;
+                myMenuVotes.push(menuName);
+                localStorage.setItem(menuVoteKey, JSON.stringify(myMenuVotes));
+                const stats = this.getStats();
+                stats.totalVotes = (stats.totalVotes || 0) + 1;
+                stats.todayVotes = (stats.todayVotes || 0) + 1;
+                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
+                DataService.saveTournaments(tournaments);
+                this.addLog(`[메뉴 추가 투표] ${getTournamentRegion(tournament)} · ${candidate.name} · ${menuName} 1표`);
+                return true;
+            },
+            recordDirectVote(tournamentId, candidateId) {
+                const stats = this.getStats();
+                stats.totalVotes = (stats.totalVotes || 0) + 1;
+                stats.todayVotes = (stats.todayVotes || 0) + 1;
+                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
+                const tournaments = DataService.getTournaments();
+                const tournament = tournaments.find(item => item.id === tournamentId);
+                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
+                if (!candidate) return;
+                candidate.votes = getCandidateVotes(candidate) + 1;
+                DataService.saveTournaments(tournaments);
+                this.addLog(`[지역 투표] ${getTournamentRegion(tournament)} · ${candidate.name}에 1표`);
+            },
+            cancelMenuVote(tournamentId, candidateId, menuName) {
+                const myMenuVotes = getMyMenuVotes(tournamentId, candidateId);
+                if (!myMenuVotes.includes(menuName)) return false;
+                const tournaments = DataService.getTournaments();
+                const tournament = tournaments.find(item => item.id === tournamentId);
+                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
+                if (!candidate) return false;
+                candidate.menuVotes = candidate.menuVotes || {};
+                const count = Number(candidate.menuVotes[menuName]) || 0;
+                if (count <= 0) return false;
+                if (count === 1) delete candidate.menuVotes[menuName];
+                else candidate.menuVotes[menuName] = count - 1;
+                const remainingVotes = myMenuVotes.filter(menu => menu !== menuName);
+                const key = getMenuVoteKey(tournamentId, candidateId);
+                if (remainingVotes.length) localStorage.setItem(key, JSON.stringify(remainingVotes));
+                else localStorage.removeItem(key);
+                const stats = this.getStats();
+                stats.totalVotes = Math.max(0, (stats.totalVotes || 0) - 1);
+                stats.todayVotes = Math.max(0, (stats.todayVotes || 0) - 1);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
+                DataService.saveTournaments(tournaments);
+                this.addLog(`[메뉴 투표 취소] ${getTournamentRegion(tournament)} · ${candidate.name} · ${menuName}`);
+                return true;
+            },
+            cancelDirectVote(tournamentId, candidateId) {
+                if (localStorage.getItem(getPollVoteKey(tournamentId)) !== String(candidateId)) return false;
+                const tournaments = DataService.getTournaments();
+                const tournament = tournaments.find(item => item.id === tournamentId);
+                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
+                if (!candidate) return false;
+                candidate.votes = Math.max(0, getCandidateVotes(candidate) - 1);
+                localStorage.removeItem(getPollVoteKey(tournamentId));
+                const stats = this.getStats();
+                stats.totalVotes = Math.max(0, (stats.totalVotes || 0) - 1);
+                stats.todayVotes = Math.max(0, (stats.todayVotes || 0) - 1);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
+                DataService.saveTournaments(tournaments);
+                this.addLog(`[식당 픽 취소] ${getTournamentRegion(tournament)} · ${candidate.name}`);
+                return true;
+            },
+            getLogs() {
+                try {
+                    const logs = localStorage.getItem(CONFIG.STORAGE_KEYS.LOGS);
+                    if (logs) return JSON.parse(logs);
+                } catch (e) {}
+
+                const initialLogs = [
+                    { time: '방금 전', text: '[지역 투표] 성수 · 소문난성수감자탕에 1표' },
+                    { time: '2분 전', text: '[지역 투표] 성수 · 성수육칼에 1표' },
+                    { time: '5분 전', text: '[지역 투표] 성수 · 어니언 성수에 1표' },
+                    { time: '8분 전', text: '[지역 투표] 성수 · 팩피에 1표' },
+                    { time: '12분 전', text: '[보안] 동일 IP 20회 반복 투표 감지 및 자동 차단 완료' }
+                ];
+                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify(initialLogs));
+                return initialLogs;
+            },
+            addLog(text) {
+                const logs = this.getLogs();
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                logs.unshift({ time: timeStr, text: text });
+                if (logs.length > 50) logs.pop();
+                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify(logs));
+            },
+            clearLogs() {
+                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify([]));
+            }
+        };
+
+        // ========================================================
+        // 5. USER POLL STATE & LOGIC
+        // ========================================================
+        let currentTournament = null;
+        let currentRegion = localStorage.getItem("FOOD_CURRENT_REGION") || "성수";
+        let myUserTierResult = null;
+
+        // Tierlist View Mode ('overall' | 'category') & selected category
+        let currentTierMode = 'category';
+        let selectedCategoryFilterId = null;
+
+        // Chart.js instances
+        let categoryChartInstance = null;
+        let trendChartInstance = null;
+
+        // --- WINDOW ONLOAD ---
+        window.onload = function() {
+            AuthService.updateAuthUI();
+            renderHomeCategories();
+            renderTierlist();
+        };
+
+        function handleLogoClick() {
+            if (AuthService.isAdmin()) {
+                switchToAdminView('stats');
+            } else {
+                showView('home');
+            }
+        }
+
+        // --- USER VIEW SWITCHER ---
         function showView(viewName) {
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.add('hidden');
             document.getElementById('view-tierlist').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
 
-            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            const targetView = document.getElementById(`view-${viewName}`);
+            if (targetView) targetView.classList.remove('hidden');
 
-            // Update Nav styling
-            document.getElementById('nav-home').className = viewName === 'home' 
-                ? 'px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
-                : 'px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
-            
-            document.getElementById('nav-tierlist').className = viewName === 'tierlist'
-                ? 'px-3 py-1.5 text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
-                : 'px-3 py-1.5 text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
+            const navHome = document.getElementById('nav-home');
+            const navTierlist = document.getElementById('nav-tierlist');
+            const btnAdminToggle = document.getElementById('btn-admin-toggle');
+
+            if (navHome && navTierlist) {
+                navHome.className = viewName === 'home' 
+                    ? 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
+                    : 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
+                
+                navTierlist.className = viewName === 'tierlist'
+                    ? 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
+                    : 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
+            }
+
+            if (btnAdminToggle) {
+                btnAdminToggle.className = viewName === 'admin'
+                    ? 'px-3 py-1.5 text-xs sm:text-sm font-bold bg-indigo-600 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-md'
+                    : 'px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm';
+            }
+
+            if (viewName === 'tierlist') {
+                renderTierlist();
+            }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- RENDER HOME CATEGORIES ---
+        function switchToUserView() {
+            showView('home');
+            renderHomeCategories();
+            renderTierlist();
+        }
+
+        function toggleAdminView() {
+            const adminView = document.getElementById('view-admin');
+            if (adminView && !adminView.classList.contains('hidden')) {
+                switchToUserView();
+            } else {
+                switchToAdminView('stats');
+            }
+        }
+
+        function switchToAdminView(targetTab = 'stats') {
+            showView('admin');
+            switchAdminTab(targetTab);
+            refreshAdminData();
+        }
+
+        function getTournamentRegion(t) { return (t && t.region ? String(t.region).trim() : "성수") || "성수"; }
+
+        function getAvailableRegions() {
+            let saved = [];
+            try { saved = JSON.parse(localStorage.getItem(REGION_STORAGE_KEY) || "[]"); } catch (e) {}
+            return [...new Set([...saved, ...DataService.getTournaments().map(getTournamentRegion)].map(r => String(r).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+        }
+
+        function saveRegion(region) {
+            const regions = getAvailableRegions();
+            if (!regions.includes(region)) regions.push(region);
+            localStorage.setItem(REGION_STORAGE_KEY, JSON.stringify(regions));
+            renderRegionOptions();
+        }
+
+        function renderRegionOptions(selectedRegion = currentRegion) {
+            const select = document.getElementById('input-tournament-region');
+            if (!select) return;
+            const regions = getAvailableRegions();
+            if (selectedRegion && !regions.includes(selectedRegion)) regions.push(selectedRegion);
+            select.innerHTML = regions.map(region => `<option value="${region}">${region}</option>`).join('');
+            select.value = selectedRegion || regions[0] || '';
+        }
+
+        function addAdminRegion() {
+            const input = document.getElementById('admin-new-region');
+            const region = input.value.trim();
+            if (!region) { showToast('추가할 지역명을 입력해 주세요.'); return; }
+            if (getAvailableRegions().includes(region)) { showToast('이미 등록된 지역입니다.'); return; }
+            saveRegion(region);
+            currentRegion = region;
+            localStorage.setItem('FOOD_CURRENT_REGION', region);
+            input.value = '';
+            renderAdminTournamentsList();
+            renderHomeCategories();
+            renderTierlist();
+            showToast(`'${region}' 지역을 추가했습니다.`);
+        }
+
+        function getActiveRegions() { return getAvailableRegions(); }
+
+        function setCurrentRegion(region) {
+            currentRegion = region;
+            localStorage.setItem("FOOD_CURRENT_REGION", region);
+            renderHomeCategories();
+            renderTierlist();
+        }
+
+        function renderRegionFilters(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = "";
+            const regions = getActiveRegions();
+            if (!regions.includes(currentRegion)) currentRegion = regions[0];
+            regions.forEach(region => {
+                const button = document.createElement("button");
+                const selected = region === currentRegion;
+                button.className = selected
+                    ? "px-4 py-2 rounded-full bg-brand-orange text-white text-xs font-black shadow-lg glow-orange"
+                    : "px-4 py-2 rounded-full bg-brand-card border border-brand-border text-gray-300 hover:text-white text-xs font-bold";
+                button.innerHTML = `${selected ? "📍 " : ""}${region}`;
+                button.onclick = () => setCurrentRegion(region);
+                container.appendChild(button);
+            });
+        }
+
+        // --- RENDER USER HOME CATEGORIES ---
         function renderHomeCategories() {
             const container = document.getElementById('category-cards-container');
+            const allTournaments = DataService.getTournaments().filter(t => t.active !== false);
+            const regions = getAvailableRegions();
+            if (regions.length && !regions.includes(currentRegion)) currentRegion = regions[0];
+            localStorage.setItem("FOOD_CURRENT_REGION", currentRegion);
+            renderRegionFilters("home-region-filters");
+            document.getElementById("home-region-title").innerText = currentRegion;
+            document.getElementById("home-region-badge").innerText = currentRegion;
+            document.getElementById("hero-region-copy").innerText = currentRegion;
+            const resultRegionTitle = document.getElementById("result-region-title");
+            if (resultRegionTitle) resultRegionTitle.innerText = currentRegion;
+            document.getElementById("notice-region-title").innerText = currentRegion;
+            document.getElementById("tier-region-title").innerText = currentRegion;
+            document.getElementById("active-region-caption").innerText = `${currentRegion}에서 지금 참여 가능한 투표`;
+            const tournaments = allTournaments.filter(t => getTournamentRegion(t) === currentRegion);
             container.innerHTML = '';
 
-            TOURNAMENTS.forEach(t => {
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-3 text-center py-12 bg-brand-card border border-brand-border rounded-2xl">
+                        <p class="text-gray-400 text-sm">${currentRegion}에서 진행 중인 투표가 없습니다. 다른 지역을 선택해 보세요.</p>
+                        <button onclick="switchToAdminView('tournaments')" class="mt-3 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">관리자 화면에서 새 투표 열기</button>
+                    </div>`;
+                return;
+            }
+
+            tournaments.forEach(t => {
+                const candCount = (t.candidates || []).length;
+                const displayTitle = getTournamentDisplayTitle(t);
                 const card = document.createElement('div');
-                card.className = 'bg-brand-card border border-brand-border hover:border-brand-orange rounded-2xl p-5 space-y-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between';
+                card.className = 'vote-card border border-brand-border hover:border-brand-orange rounded-2xl p-5 space-y-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col justify-between';
                 card.innerHTML = `
                     <div class="space-y-3">
                         <div class="flex justify-between items-start">
-                            <span class="text-3xl">${t.icon}</span>
-                            <span class="text-xs px-2.5 py-1 rounded-full bg-brand-orange/20 text-brand-orange border border-brand-orange/30 font-bold">${t.badge}</span>
+                            <span class="text-3xl">${t.icon || '🍲'}</span>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-brand-orange/20 text-brand-orange border border-brand-orange/30 font-bold">${t.badge || '인기'}</span>
                         </div>
                         <div>
-                            <h3 class="text-lg font-black text-white">${t.title}</h3>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-brand-neon"><i class="fa-solid fa-location-dot"></i> ${getTournamentRegion(t)} 진행 중</span>
+                            <h3 class="text-lg font-black text-white mt-1">${displayTitle}</h3>
                             <p class="text-xs text-gray-400 mt-1">${t.desc}</p>
+                            <span class="text-[11px] text-gray-500 mt-2 block"><i class="fa-solid fa-store text-brand-orange"></i> 투표 후보: <strong>${candCount}곳</strong></span>
                         </div>
                     </div>
-                    <button onclick="startTournament('${t.id}')" class="w-full py-2.5 mt-2 rounded-xl bg-brand-orange hover:bg-brand-orange/90 text-white font-bold text-sm transition-all flex items-center justify-center gap-2">
-                        <span>토너먼트 시작</span> <i class="fa-solid fa-play text-xs"></i>
-                    </button>
-                `;
+                    <button onclick="startTournament('${t.id}')" ${candCount < 1 ? 'disabled' : ''} class="w-full py-2.5 mt-2 rounded-xl ${candCount < 1 ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-brand-orange hover:bg-brand-orange/90 text-white'} font-bold text-sm transition-all flex items-center justify-center gap-2">
+                        <span>${candCount < 1 ? '맛집 등록 대기 중' : '투표 참여하기'}</span> <i class="fa-solid fa-play text-xs"></i>
+                    </button>`;
                 container.appendChild(card);
             });
         }
 
-        // --- GAME ENGINE LOGIC ---
+        // --- GAME ENGINE ---
         function startTournament(tournamentId) {
-            currentTournament = TOURNAMENTS.find(t => t.id === tournamentId);
-            if (!currentTournament) return;
-
-            // Shuffle Candidates
-            currentRoundList = [...currentTournament.candidates].sort(() => Math.random() - 0.5);
-            nextRoundList = [];
-            currentMatchIndex = 0;
-            roundName = '8강';
-            tournamentRankings = [];
-
-            showView('game');
-            updateMatchDisplay();
-        }
-
-        function updateMatchDisplay() {
-            const candidateA = currentRoundList[currentMatchIndex * 2];
-            const candidateB = currentRoundList[currentMatchIndex * 2 + 1];
-
-            const totalMatchesInRound = currentRoundList.length / 2;
-            const currentMatchNum = currentMatchIndex + 1;
-
-            // Update Headers
-            document.getElementById('game-title').innerText = currentTournament.title;
-            document.getElementById('game-round-badge').innerText = `${roundName} (${currentMatchNum}/${totalMatchesInRound})`;
-            
-            // Progress percentage
-            const progressPercent = (currentMatchNum / totalMatchesInRound) * 100;
-            document.getElementById('game-progress-bar').style.width = `${progressPercent}%`;
-
-            // Card 0 (A)
-            document.getElementById('card-0-img').src = candidateA.img;
-            document.getElementById('card-0-name').innerText = candidateA.name;
-            document.getElementById('card-0-desc').innerText = candidateA.desc;
-            document.getElementById('card-0-menu').innerText = candidateA.menu;
-            document.getElementById('card-0-seed').innerText = `${roundName} 후보 A`;
-
-            // Card 1 (B)
-            document.getElementById('card-1-img').src = candidateB.img;
-            document.getElementById('card-1-name').innerText = candidateB.name;
-            document.getElementById('card-1-desc').innerText = candidateB.desc;
-            document.getElementById('card-1-menu').innerText = candidateB.menu;
-            document.getElementById('card-1-seed').innerText = `${roundName} 후보 B`;
-        }
-
-        function selectCandidate(selectedIndex) {
-            const candidateA = currentRoundList[currentMatchIndex * 2];
-            const candidateB = currentRoundList[currentMatchIndex * 2 + 1];
-
-            const winner = selectedIndex === 0 ? candidateA : candidateB;
-            const loser = selectedIndex === 0 ? candidateB : candidateA;
-
-            nextRoundList.push(winner);
-            tournamentRankings.push({ candidate: loser, roundEliminated: roundName });
-
-            currentMatchIndex++;
-
-            // Check if current round completed
-            if (currentMatchIndex >= currentRoundList.length / 2) {
-                if (nextRoundList.length === 1) {
-                    // FINAL WINNER REACHED
-                    const ultimateWinner = nextRoundList[0];
-                    tournamentRankings.push({ candidate: ultimateWinner, roundEliminated: 'Winner' });
-                    finishTournament(ultimateWinner);
-                } else {
-                    // Move to Next Round (4강 or 결승)
-                    currentRoundList = [...nextRoundList];
-                    nextRoundList = [];
-                    currentMatchIndex = 0;
-
-                    if (currentRoundList.length === 4) roundName = '4강전';
-                    else if (currentRoundList.length === 2) roundName = '결승전';
-
-                    updateMatchDisplay();
-                }
-            } else {
-                updateMatchDisplay();
+            currentTournament = DataService.getTournamentById(tournamentId);
+            if (!currentTournament || !currentTournament.candidates || currentTournament.candidates.length < 1) {
+                showToast('투표할 맛집이 아직 없습니다.');
+                return;
             }
+            showView('game');
+            renderPoll();
+        }
+
+        function getCandidateVotes(candidate) {
+            return Math.max(0, Number(candidate.votes ?? candidate.wins ?? 0));
+        }
+
+        function getMenuChoices(candidate) {
+            return [...new Set(String(candidate.menu || '').split(/\s*(?:\/|,|·|;)\s*/).map(menu => menu.trim()).filter(Boolean))];
+        }
+
+        function getPollVoteKey(tournamentId) {
+            return `FOOD_POLL_VOTE_${tournamentId}_${new Date().toISOString().slice(0, 10)}`;
+        }
+
+        function getMenuVoteKey(tournamentId, candidateId) {
+            return `FOOD_MENU_VOTES_${tournamentId}_${candidateId}`;
+        }
+
+        function getMyMenuVotes(tournamentId, candidateId) {
+            try {
+                const saved = JSON.parse(localStorage.getItem(getMenuVoteKey(tournamentId, candidateId)) || '[]');
+                return Array.isArray(saved) ? saved : [];
+            }
+            catch (e) { return []; }
+        }
+
+        function renderPoll() {
+            if (!currentTournament) return;
+            const candidates = currentTournament.candidates || [];
+            const totalVotes = candidates.reduce((sum, candidate) => sum + getCandidateVotes(candidate), 0);
+            const myVote = localStorage.getItem(getPollVoteKey(currentTournament.id));
+            document.getElementById('game-title').innerText = getTournamentDisplayTitle(currentTournament);
+            document.getElementById('poll-region-label').innerText = `📍 ${getTournamentRegion(currentTournament)} · 식당 픽`;
+            document.getElementById('poll-vote-count').innerText = `현재 ${totalVotes.toLocaleString()}표`;
+            const container = document.getElementById('poll-candidates');
+            container.innerHTML = '';
+            [...candidates].sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a)).forEach(candidate => {
+                const votes = getCandidateVotes(candidate);
+                const percent = totalVotes ? Math.round(votes / totalVotes * 100) : 0;
+                const selected = String(myVote) === String(candidate.id);
+                const card = document.createElement('article');
+                card.className = `bg-brand-card border ${selected ? 'border-brand-orange ring-1 ring-brand-orange/40' : 'border-brand-border'} rounded-2xl overflow-hidden`;
+                const menuPanel = selected ? `
+                    <section class="pt-3 border-t border-brand-border space-y-2">
+                        <div><h4 class="text-sm font-bold text-white">이 식당에서 가장 맛있었던 메뉴는?</h4><p class="text-[11px] text-gray-400">선택 참여 · 여러 메뉴를 고를 수 있고, 메뉴마다 한 표만 가능해요</p></div>
+                        <div class="flex flex-wrap gap-2">${getMenuChoices(candidate).map(menu => {
+                            const menuVotes = Number((candidate.menuVotes || {})[menu]) || 0;
+                            const alreadyVoted = getMyMenuVotes(currentTournament.id, candidate.id).includes(menu);
+                            const candidateArg = encodeURIComponent(String(candidate.id)).replace(/'/g, '%27');
+                            const menuArg = encodeURIComponent(menu).replace(/'/g, '%27');
+                            return `<span class="inline-flex items-center gap-1"><button type="button" ${alreadyVoted ? 'disabled' : ''} onclick="castMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="px-3 py-2 rounded-lg ${alreadyVoted ? 'border-brand-orange bg-brand-orange/10 text-brand-orange' : 'bg-brand-dark border-brand-border hover:border-brand-orange text-gray-200'} border text-xs font-semibold disabled:cursor-default">${menu} <span class="${alreadyVoted ? 'text-brand-orange' : 'text-brand-neon'} ml-1">${alreadyVoted ? '내 투표 · ' : ''}${menuVotes}표</span></button>${alreadyVoted ? `<button type="button" onclick="cancelMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="px-2 py-2 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 text-xs">취소</button>` : ''}</span>`;
+                        }).join('')}</div>
+                    </section>` : '';
+                card.innerHTML = `
+                    <img src="${candidate.img || IMAGE_PRESETS.korean}" alt="${candidate.name}" class="w-full h-44 object-cover">
+                    <div class="p-4 space-y-3">
+                        <div><span class="text-[11px] text-brand-yellow font-bold">대표 메뉴 · ${candidate.menu || '미등록'}</span><h3 class="text-lg font-black text-white">${candidate.name}</h3><p class="text-xs text-gray-400 mt-1">${candidate.desc || ''}</p></div>
+                        <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-300">${votes.toLocaleString()}표</span><strong class="text-brand-neon">${percent}%</strong></div><div class="h-2 rounded-full bg-brand-dark overflow-hidden"><div class="h-full bg-gradient-to-r from-brand-orange to-brand-yellow rounded-full transition-all" style="width:${percent}%"></div></div></div>
+                        <a href="${getNaverMapUrl(candidate)}" target="_blank" class="text-[11px] text-gray-400 hover:text-white"><i class="fa-solid fa-location-dot text-[#03C75A]"></i> 지도 보기</a>
+                        <button type="button" onclick="castPollVote(${JSON.stringify(candidate.id)})" ${myVote ? 'disabled' : ''} class="w-full py-2.5 rounded-xl ${myVote ? (selected ? 'bg-brand-orange text-white' : 'bg-brand-dark text-gray-500') : 'bg-brand-orange hover:bg-orange-500 text-white'} font-bold text-sm disabled:cursor-default">${myVote ? (selected ? '내가 픽한 식당' : '투표 완료') : '이 식당을 픽하기'}</button>
+                        ${selected ? `<button type="button" onclick="cancelRestaurantVote(${JSON.stringify(candidate.id)})" class="w-full py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 font-semibold text-sm">식당 픽 취소</button>` : ''}
+                        ${menuPanel}
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function castPollVote(candidateId) {
+            if (!currentTournament) return;
+            const voteKey = getPollVoteKey(currentTournament.id);
+            if (localStorage.getItem(voteKey)) {
+                showToast('이 투표에는 이미 참여했어요.');
+                return;
+            }
+            const candidate = currentTournament.candidates.find(item => String(item.id) === String(candidateId));
+            if (!candidate) return;
+            StatsService.recordDirectVote(currentTournament.id, candidate.id);
+            localStorage.setItem(voteKey, String(candidate.id));
+            currentTournament = DataService.getTournamentById(currentTournament.id);
+            renderPoll();
+            renderTierlist();
+            showToast(`'${candidate.name}' 식당 픽 완료!`);
+        }
+
+        function castMenuVote(candidateId, menuName) {
+            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
+            const candidate = currentTournament.candidates.find(item => String(item.id) === String(candidateId));
+            if (!candidate || !getMenuChoices(candidate).includes(menuName)) return;
+            const myMenuVotes = getMyMenuVotes(currentTournament.id, candidate.id);
+            if (myMenuVotes.includes(menuName)) { showToast('이 메뉴에는 이미 투표했어요.'); return; }
+            if (!StatsService.recordMenuVote(currentTournament.id, candidate.id, menuName)) return;
+            currentTournament = DataService.getTournamentById(currentTournament.id);
+            renderPoll();
+            showToast(`'${menuName}' 메뉴에 추가 투표했어요!`);
+        }
+
+        function cancelMenuVote(candidateId, menuName) {
+            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
+            if (!StatsService.cancelMenuVote(currentTournament.id, candidateId, menuName)) return;
+            currentTournament = DataService.getTournamentById(currentTournament.id);
+            renderPoll();
+            showToast('메뉴 픽을 취소했어요.');
+        }
+
+        function cancelRestaurantVote(candidateId) {
+            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
+            getMyMenuVotes(currentTournament.id, candidateId).forEach(menu => StatsService.cancelMenuVote(currentTournament.id, candidateId, menu));
+            if (!StatsService.cancelDirectVote(currentTournament.id, candidateId)) return;
+            currentTournament = DataService.getTournamentById(currentTournament.id);
+            renderPoll();
+            renderTierlist();
+            showToast('식당 픽을 취소했어요.');
         }
 
         function confirmExitGame() {
-            if (confirm('진행 중인 토너먼트를 포기하고 처음으로 돌아가시겠습니까?')) {
-                showView('home');
+            showView('home');
+        }
+
+        // ========================================================
+        // 6. TIERLIST LOGIC (OVERALL & CATEGORY SPECIFIC TIERS)
+        // ========================================================
+        function switchTierMode(mode) {
+            currentTierMode = mode;
+            const btnOverall = document.getElementById('tier-mode-overall-btn');
+            const btnCategory = document.getElementById('tier-mode-category-btn');
+            const catFilterWrapper = document.getElementById('tier-category-filter-wrapper');
+
+            if (mode === 'overall') {
+                btnOverall.className = 'px-3.5 py-2 rounded-lg bg-brand-orange text-white transition-all flex items-center gap-1.5 shadow-sm';
+                btnCategory.className = 'px-3.5 py-2 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1.5';
+                catFilterWrapper.classList.add('hidden');
+            } else {
+                btnOverall.className = 'px-3.5 py-2 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1.5';
+                btnCategory.className = 'px-3.5 py-2 rounded-lg bg-brand-orange text-white transition-all flex items-center gap-1.5 shadow-sm';
+                catFilterWrapper.classList.remove('hidden');
+                populateCategoryFilterButtons();
             }
+
+            renderTierlist();
         }
 
-        // --- FINISH TOURNAMENT & SHOW RESULT ---
-        function finishTournament(winner) {
-            // Trigger Confetti Celebration
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-
-            // Display Winner Info
-            document.getElementById('winner-img').src = winner.img;
-            document.getElementById('winner-name').innerText = winner.name;
-            document.getElementById('winner-desc').innerText = `${winner.desc} (${winner.menu})`;
-
-            // Generate User Tier List from rankings
-            generateMyTierList(winner);
-
-            showView('result');
-            showToast(`🏆 '${winner.name}'이(가) 최종 우승했습니다!`);
-        }
-
-        function generateMyTierList(winner) {
-            const container = document.getElementById('my-tierlist-container');
+        function populateCategoryFilterButtons() {
+            const container = document.getElementById('tier-category-buttons');
             container.innerHTML = '';
+            const tournaments = DataService.getTournaments().filter(t => t.active !== false && getTournamentRegion(t) === currentRegion);
 
-            // Group candidates into Tiers based on elimination
-            // S Tier: Winner
-            // A Tier: Finalist (Runner-up)
-            // B Tier: 4강 탈락자 (2개)
-            // C Tier: 8강 탈락자 (4개)
+            if (tournaments.length === 0) return;
 
-            const runnerUp = tournamentRankings.find(r => r.roundEliminated === '결승전')?.candidate;
-            const semiFinalists = tournamentRankings.filter(r => r.roundEliminated === '4강전').map(r => r.candidate);
-            const quarterFinalists = tournamentRankings.filter(r => r.roundEliminated === '8강').map(r => r.candidate);
+            if (!selectedCategoryFilterId || !tournaments.some(t => t.id === selectedCategoryFilterId)) {
+                selectedCategoryFilterId = tournaments[0].id;
+            }
 
-            myUserTierResult = {
-                s: [winner],
-                a: runnerUp ? [runnerUp] : [],
-                b: semiFinalists,
-                c: quarterFinalists
-            };
-
-            const tiers = [
-                { tier: 'S', color: 'bg-red-600', text: 'text-red-500', items: myUserTierResult.s },
-                { tier: 'A', color: 'bg-orange-500', text: 'text-orange-500', items: myUserTierResult.a },
-                { tier: 'B', color: 'bg-yellow-500', text: 'text-yellow-500', items: myUserTierResult.b },
-                { tier: 'C', color: 'bg-emerald-500', text: 'text-emerald-500', items: myUserTierResult.c }
-            ];
-
-            tiers.forEach(t => {
-                const row = document.createElement('div');
-                row.className = 'flex rounded-xl bg-brand-card border border-brand-border overflow-hidden min-h-[60px]';
-                
-                let itemsHTML = t.items.map(item => `
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-dark border border-brand-border">
-                        <img src="${item.img}" class="w-7 h-7 rounded-md object-cover">
-                        <span class="text-xs font-bold text-white">${item.name}</span>
-                    </div>
-                `).join('');
-
-                row.innerHTML = `
-                    <div class="${t.color} text-white font-black text-xl w-14 flex items-center justify-center flex-shrink-0">
-                        ${t.tier}
-                    </div>
-                    <div class="p-3 flex items-center gap-2 flex-wrap flex-grow">
-                        ${itemsHTML || '<span class="text-xs text-gray-500">해당 없음</span>'}
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        // --- OVERALL TIERLIST VIEW LOGIC ---
-        function renderOverallTierlist() {
-            const container = document.getElementById('overall-tier-container');
-            const filterContainer = document.getElementById('tier-filter-buttons');
-            
-            filterContainer.innerHTML = '';
-            container.innerHTML = '';
-
-            // Filter Buttons
-            TOURNAMENTS.forEach((t, idx) => {
+            tournaments.forEach(t => {
                 const btn = document.createElement('button');
-                btn.className = idx === 0 
-                    ? 'px-3 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-bold whitespace-nowrap'
-                    : 'px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-gray-400 hover:text-white text-xs font-semibold whitespace-nowrap';
-                btn.innerText = t.title.split(' Top')[0];
-                btn.onclick = () => filterOverallTier(t.id, btn);
-                filterContainer.appendChild(btn);
+                const isSelected = t.id === selectedCategoryFilterId;
+                btn.className = isSelected 
+                    ? 'px-3.5 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-bold whitespace-nowrap shadow-md'
+                    : 'px-3.5 py-1.5 rounded-lg bg-brand-card border border-brand-border text-gray-300 hover:text-white text-xs font-semibold whitespace-nowrap';
+                btn.innerHTML = `${t.icon || '🍲'} ${getTournamentDisplayTitle(t)}`;
+                btn.onclick = () => {
+                    selectedCategoryFilterId = t.id;
+                    populateCategoryFilterButtons();
+                    renderTierlist();
+                };
+                container.appendChild(btn);
             });
-
-            // Default display first category
-            filterOverallTier(TOURNAMENTS[0].id);
         }
 
-        function filterOverallTier(tournamentId, activeBtn = null) {
-            if (activeBtn) {
-                Array.from(document.getElementById('tier-filter-buttons').children).forEach(b => {
-                    b.className = 'px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-gray-400 hover:text-white text-xs font-semibold whitespace-nowrap';
-                });
-                activeBtn.className = 'px-3 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-bold whitespace-nowrap';
+        function renderTierlist() {
+            const container = document.getElementById('tierlist-cards-container');
+            container.innerHTML = '';
+            renderRegionFilters('tier-region-filters');
+            const tournaments = DataService.getTournaments().filter(t => t.active !== false && getTournamentRegion(t) === currentRegion);
+
+            if (tournaments.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-gray-500 text-xs">${currentRegion} 지역에 공개된 투표가 없습니다.</div>`;
+                return;
             }
 
-            const tourney = TOURNAMENTS.find(t => t.id === tournamentId);
-            const container = document.getElementById('overall-tier-container');
-            container.innerHTML = '';
+            if (currentTierMode === 'overall') {
+                // 1. OVERALL GLOBAL TIER (All Restaurants Across Categories)
+                let allCandidates = [];
+                tournaments.forEach(t => {
+                    (t.candidates || []).forEach(c => {
+                        allCandidates.push({
+                            ...c,
+                            tourneyTitle: getTournamentDisplayTitle(t),
+                            tourneyIcon: t.icon || '🍲'
+                        });
+                    });
+                });
 
-            // Pre-calculated static tiers for realistic preview
-            const sTier = [tourney.candidates[0]];
-            const aTier = [tourney.candidates[1], tourney.candidates[2]];
-            const bTier = [tourney.candidates[3], tourney.candidates[4], tourney.candidates[5]];
-            const cTier = [tourney.candidates[6], tourney.candidates[7]];
+                if (allCandidates.length === 0) {
+                    container.innerHTML = `<div class="p-8 text-center text-gray-500 text-xs">등록된 맛집 데이터가 없습니다.</div>`;
+                    return;
+                }
 
-            const tiers = [
-                { tier: 'S Tier', desc: '성수동 압도적 1위 맛집', color: 'bg-red-600', items: sTier },
-                { tier: 'A Tier', desc: '실질적 우승 후보군', color: 'bg-orange-500', items: aTier },
-                { tier: 'B Tier', desc: '단골 형성 우수 매장', color: 'bg-yellow-500', items: bTier },
-                { tier: 'C Tier', desc: '무난한 기본 맛집', color: 'bg-emerald-500', items: cTier }
-            ];
+                // Sort by win rate & total wins
+                allCandidates.sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
 
+                const total = allCandidates.length;
+                const sCount = Math.max(1, Math.ceil(total * 0.15));
+                const aCount = Math.max(2, Math.ceil(total * 0.35));
+                const bCount = Math.max(3, Math.ceil(total * 0.65));
+
+                const sTier = allCandidates.slice(0, sCount);
+                const aTier = allCandidates.slice(sCount, aCount);
+                const bTier = allCandidates.slice(aCount, bCount);
+                const cTier = allCandidates.slice(bCount);
+
+                const tiers = [
+                    { tier: 'S Tier', desc: `${currentRegion} 맛집 누적 투표 상위 15%`, color: 'bg-red-600', items: sTier },
+                    { tier: 'A Tier', desc: '모두가 인정하는 독보적 우수 매장', color: 'bg-orange-500', items: aTier },
+                    { tier: 'B Tier', desc: '탄탄한 팬덤과 단골 보유 매장', color: 'bg-yellow-500', items: bTier },
+                    { tier: 'C Tier', desc: '기본에 충실한 추천 후보 매장', color: 'bg-emerald-500', items: cTier }
+                ];
+
+                renderTierSections(tiers, container, true);
+
+            } else {
+                // 2. CATEGORY SPECIFIC TIER
+                if (!selectedCategoryFilterId || !tournaments.some(t => t.id === selectedCategoryFilterId)) {
+                    selectedCategoryFilterId = tournaments[0].id;
+                }
+
+                const tourney = DataService.getTournamentById(selectedCategoryFilterId);
+                if (!tourney || !tourney.candidates || tourney.candidates.length === 0) {
+                    container.innerHTML = `<div class="p-8 text-center text-gray-500 text-xs">해당 카테고리에 등록된 맛집이 없습니다.</div>`;
+                    return;
+                }
+
+                populateCategoryFilterButtons();
+                const sorted = [...tourney.candidates].sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
+
+                const sTier = sorted.slice(0, 1);
+                const aTier = sorted.slice(1, 3);
+                const bTier = sorted.slice(3, 6);
+                const cTier = sorted.slice(6);
+
+                const tiers = [
+                    { tier: 'S Tier', desc: `${getTournamentDisplayTitle(tourney)} 독보적 1위`, color: 'bg-red-600', items: sTier },
+                    { tier: 'A Tier', desc: '득표 상위 후보군', color: 'bg-orange-500', items: aTier },
+                    { tier: 'B Tier', desc: '꾸준히 선택받는 메뉴', color: 'bg-yellow-500', items: bTier },
+                    { tier: 'C Tier', desc: '더 많은 픽을 기다리는 맛집', color: 'bg-emerald-500', items: cTier }
+                ];
+
+                renderTierSections(tiers, container, false);
+            }
+        }
+
+        function renderTierSections(tiers, container, showCategoryBadge) {
             tiers.forEach(t => {
+                if (t.items.length === 0) return;
                 const section = document.createElement('div');
                 section.className = 'bg-brand-card border border-brand-border rounded-xl overflow-hidden';
                 
-                let cardsHTML = t.items.map(item => `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-brand-dark border border-brand-border hover:border-brand-orange/50 transition-all">
-                        <div class="flex items-center gap-3">
-                            <img src="${item.img}" class="w-12 h-12 rounded-lg object-cover">
-                            <div>
-                                <h4 class="font-bold text-white text-sm">${item.name}</h4>
-                                <p class="text-xs text-gray-400">${item.menu} • ${item.desc}</p>
+                let cardsHTML = t.items.map(item => {
+                    const votes = getCandidateVotes(item);
+                    const naverLink = getNaverMapUrl(item);
+                    return `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-brand-dark border border-brand-border hover:border-brand-orange/50 transition-all gap-3">
+                            <div class="flex items-center gap-3">
+                                <img src="${item.img || IMAGE_PRESETS.korean}" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
+                                <div class="space-y-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h4 class="font-bold text-white text-sm sm:text-base">${item.name}</h4>
+                                        <span class="text-[11px] px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">${item.menu}</span>
+                                        ${showCategoryBadge && item.tourneyTitle ? `
+                                            <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                ${item.tourneyIcon} ${item.tourneyTitle}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                    <p class="text-xs text-gray-400 line-clamp-1">${item.desc}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-brand-border/40">
+                                <span class="text-xs font-bold text-brand-orange bg-brand-orange/10 px-2.5 py-1.5 rounded-md border border-brand-orange/20 whitespace-nowrap">
+                                    ${votes.toLocaleString()}표
+                                </span>
+                                <a href="${naverLink}" target="_blank" class="px-3 py-1.5 rounded-md bg-[#03C75A] hover:bg-[#02b351] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                                    <i class="fa-solid fa-location-dot"></i> <span>네이버 지도</span>
+                                </a>
                             </div>
                         </div>
-                        <span class="text-xs font-bold text-brand-orange bg-brand-orange/10 px-2.5 py-1 rounded-md border border-brand-orange/20">
-                            승률 89%
-                        </span>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
 
                 section.innerHTML = `
                     <div class="p-3 ${t.color} text-white flex justify-between items-center">
                         <span class="font-black text-base">${t.tier}</span>
                         <span class="text-xs font-medium opacity-90">${t.desc}</span>
                     </div>
-                    <div class="p-3 space-y-2">
+                    <div class="p-3 space-y-2.5">
                         ${cardsHTML}
                     </div>
                 `;
@@ -804,19 +1938,757 @@
             });
         }
 
-        // --- INSTAGRAM STORY SHARE MODAL LOGIC ---
+        // ========================================================
+        // 7. ADMIN DASHBOARD & MANAGEMENT LOGIC
+        // ========================================================
+        function switchAdminTab(tabName) {
+            ['stats', 'tournaments', 'candidates', 'system'].forEach(tab => {
+                const el = document.getElementById(`admin-tab-${tab}`);
+                const btn = document.getElementById(`tab-btn-${tab}`);
+                if (el) el.classList.add('hidden');
+                if (btn) {
+                    btn.className = 'px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-brand-card text-gray-400 hover:text-white border border-brand-border transition-all flex items-center gap-2 whitespace-nowrap';
+                }
+            });
+
+            const targetEl = document.getElementById(`admin-tab-${tabName}`);
+            const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (targetEl) targetEl.classList.remove('hidden');
+            if (targetBtn) {
+                targetBtn.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white transition-all flex items-center gap-2 whitespace-nowrap shadow-md';
+            }
+
+            if (tabName === 'stats') {
+                renderAdminStats();
+            } else if (tabName === 'tournaments') {
+                renderAdminTournamentsList();
+            } else if (tabName === 'candidates') {
+                populateAdminCandidateTournamentsSelect();
+                renderAdminCandidatesList();
+            }
+        }
+
+        function refreshAdminData() {
+            renderAdminStats();
+            renderAdminTournamentsList();
+            populateAdminCandidateTournamentsSelect();
+            renderAdminCandidatesList();
+        }
+
+        // --- ADMIN TAB 1: STATS & CHARTS ---
+        function renderAdminStats() {
+            const stats = StatsService.getStats();
+            const tournaments = DataService.getTournaments();
+
+            let totalCandidatesCount = 0;
+            tournaments.forEach(t => {
+                totalCandidatesCount += (t.candidates || []).length;
+            });
+
+            document.getElementById('stat-total-votes').innerText = stats.totalVotes.toLocaleString();
+            document.getElementById('stat-today-votes').innerText = stats.todayVotes.toLocaleString();
+            document.getElementById('stat-active-tournaments').innerText = tournaments.filter(t => t.active !== false).length;
+            document.getElementById('stat-total-tournaments').innerText = tournaments.length;
+            document.getElementById('stat-total-candidates').innerText = totalCandidatesCount;
+
+            const logsContainer = document.getElementById('admin-live-logs-container');
+            const logs = StatsService.getLogs();
+            logsContainer.innerHTML = '';
+            if (logs.length === 0) {
+                logsContainer.innerHTML = '<div class="text-xs text-gray-500 py-3 text-center">기록된 최근 활동 로그가 없습니다.</div>';
+            } else {
+                logs.forEach(log => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-start gap-2.5 p-2 rounded-lg bg-brand-dark border border-brand-border text-xs';
+                    row.innerHTML = `
+                        <span class="text-[10px] text-gray-500 font-mono flex-shrink-0 mt-0.5">${log.time}</span>
+                        <span class="text-gray-300 font-medium">${log.text}</span>
+                    `;
+                    logsContainer.appendChild(row);
+                });
+            }
+
+            const topContainer = document.getElementById('admin-top-candidates-container');
+            topContainer.innerHTML = '';
+            let allCandidates = [];
+            tournaments.forEach(t => {
+                (t.candidates || []).forEach(c => {
+                    allCandidates.push({ ...c, tourneyTitle: getTournamentDisplayTitle(t) });
+                });
+            });
+
+            allCandidates.sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
+            const top5 = allCandidates.slice(0, 5);
+
+            top5.forEach((c, idx) => {
+                const voteCount = getCandidateVotes(c);
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between p-2.5 rounded-xl bg-brand-dark border border-brand-border';
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg ${idx === 0 ? 'bg-amber-500 text-black font-black' : 'bg-brand-border text-gray-300'} text-xs flex items-center justify-center font-bold flex-shrink-0">
+                            ${idx + 1}
+                        </span>
+                        <img src="${c.img || IMAGE_PRESETS.korean}" class="w-8 h-8 rounded-lg object-cover">
+                        <div>
+                            <span class="text-xs font-bold text-white block">${c.name}</span>
+                            <span class="text-[10px] text-gray-400 block">${c.tourneyTitle}</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex items-center gap-3">
+                        <div>
+                            <span class="text-xs font-bold text-brand-orange block">${getCandidateVotes(c).toLocaleString()}표</span>
+                            <span class="text-[10px] text-gray-400 block">득표 현황</span>
+                        </div>
+                        <a href="${getNaverMapUrl(c)}" target="_blank" class="p-1.5 rounded bg-[#03C75A]/20 hover:bg-[#03C75A] text-[#03C75A] hover:text-white transition-all text-xs" title="네이버 지도 보기">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </a>
+                    </div>
+                `;
+                topContainer.appendChild(row);
+            });
+
+            renderCharts(tournaments, stats);
+        }
+
+        function renderCharts(tournaments, stats) {
+            const catCtx = document.getElementById('categoryChart').getContext('2d');
+            const catLabels = tournaments.map(t => getTournamentDisplayTitle(t));
+            const catVotes = tournaments.map(t => {
+                let votes = 0;
+                (t.candidates || []).forEach(c => { votes += getCandidateVotes(c); });
+                return votes || 50;
+            });
+
+            if (categoryChartInstance) categoryChartInstance.destroy();
+
+            categoryChartInstance = new Chart(catCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catVotes,
+                        backgroundColor: ['#FF5E1E', '#FFB800', '#6366F1', '#00FF9D', '#EC4899', '#38BDF8'],
+                        borderColor: '#18181C',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#9CA3AF', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            trendChartInstance = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['6일 전', '5일 전', '4일 전', '3일 전', '그저께', '어제', '오늘'],
+                    datasets: [{
+                        label: '일별 투표 참여수',
+                        data: stats.dailyTrend || [180, 210, 245, 190, 280, 310, stats.todayVotes],
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#FF5E1E',
+                        pointBorderColor: '#FFF',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: '#2A2A32' },
+                            ticks: { color: '#9CA3AF', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { color: '#2A2A32' },
+                            ticks: { color: '#9CA3AF', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function injectSampleVotes() {
+            const polls = DataService.getTournaments().filter(t => t.candidates && t.candidates.length);
+            if (!polls.length) return;
+            for (let i = 0; i < 50; i++) {
+                const poll = polls[Math.floor(Math.random() * polls.length)];
+                const candidate = poll.candidates[Math.floor(Math.random() * poll.candidates.length)];
+                StatsService.recordDirectVote(poll.id, candidate.id);
+            }
+            StatsService.addLog('⚡ [모의 테스트] 가상 직접 투표 50건 반영 완료');
+            showToast('⚡ 가상 투표 50건이 반영되었습니다!');
+            renderAdminStats();
+        }
+
+        function clearVoteLogs() {
+            if (confirm('모든 감사 로그를 지우시겠습니까?')) {
+                StatsService.clearLogs();
+                renderAdminStats();
+                showToast('로그가 비워졌습니다.');
+            }
+        }
+
+        // --- ADMIN TAB 2: TOURNAMENTS LIST & CRUD ---
+        let selectedAdminRegion = 'all';
+
+        function renderAdminRegionsList() {
+            const container = document.getElementById('admin-regions-list');
+            if (!container) return;
+            container.innerHTML = getAvailableRegions().map(region => {
+                const encoded = encodeURIComponent(region).replace(/'/g, '%27');
+                return `<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-dark border border-brand-border text-xs text-gray-200"><span>${region}</span><button type="button" onclick="deleteAdminRegion(decodeURIComponent('${encoded}'))" class="ml-1 px-2 py-1 rounded-md border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-600 hover:text-white font-bold" aria-label="${region} 지역 삭제">지역 삭제</button></span>`;
+            }).join('');
+        }
+
+        function deleteAdminRegion(region) {
+            const linkedPolls = DataService.getTournaments().filter(t => getTournamentRegion(t) === region);
+            if (linkedPolls.length) {
+                showToast('이 지역의 투표를 먼저 다른 지역으로 옮기거나 삭제해 주세요.');
+                return;
+            }
+            if (!window.confirm(`지역 '${region}'을(를) 삭제할까요?\n\n이 작업은 되돌릴 수 없습니다. 삭제 후 이 지역은 지역 선택과 관리자 관리 목록에서 사라집니다.`)) return;
+            let regions = [];
+            try { regions = JSON.parse(localStorage.getItem(REGION_STORAGE_KEY) || '[]'); } catch (e) {}
+            localStorage.setItem(REGION_STORAGE_KEY, JSON.stringify(regions.filter(item => String(item).trim() !== region)));
+            if (currentRegion === region) {
+                currentRegion = getAvailableRegions()[0] || '성수';
+                localStorage.setItem('FOOD_CURRENT_REGION', currentRegion);
+            }
+            renderRegionOptions(currentRegion);
+            renderHomeCategories();
+            renderTierlist();
+            renderAdminTournamentsList();
+            showToast('지역을 삭제했어요.');
+        }
+
+        function renderAdminTournamentsList() {
+            const container = document.getElementById('admin-tournaments-list-container');
+            const all = DataService.getTournaments();
+            renderAdminRegionsList();
+            const regions = getAvailableRegions();
+            if (selectedAdminRegion !== 'all' && !regions.includes(selectedAdminRegion)) selectedAdminRegion = 'all';
+            const tabs = document.getElementById('admin-region-tabs');
+            if (tabs) tabs.innerHTML = [['all', '전체'], ...regions.map(region => [region, region])].map(([value, label]) => {
+                const active = selectedAdminRegion === value;
+                const encoded = encodeURIComponent(value).replace(/'/g, '%27');
+                return `<button type="button" role="tab" aria-selected="${active}" onclick="selectAdminRegion(decodeURIComponent('${encoded}'))" class="px-4 py-2 rounded-xl border text-sm font-bold transition ${active ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-950/40' : 'bg-brand-dark border-brand-border text-gray-400 hover:text-white hover:border-indigo-400'}">${label}${value !== 'all' ? `<span class="ml-2 text-[10px] opacity-70">${all.filter(t => getTournamentRegion(t) === value).length}</span>` : ''}</button>`;
+            }).join('');
+            const tournaments = selectedAdminRegion === 'all' ? all : all.filter(t => getTournamentRegion(t) === selectedAdminRegion);
+            container.innerHTML = '';
+
+            if (!tournaments.length) {
+                container.innerHTML = '<div class="col-span-full p-8 text-center text-gray-500 text-xs">해당 지역에 등록된 투표가 없습니다.</div>';
+                return;
+            }
+            tournaments.forEach(t => {
+                const candCount = (t.candidates || []).length;
+                const card = document.createElement('div');
+                card.className = 'bg-brand-card border border-brand-border rounded-xl p-4 space-y-3';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-2xl">${t.icon || '🍲'}</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm flex items-center gap-2">${getTournamentDisplayTitle(t)}
+                                    ${t.active !== false ? '<span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">공개중</span>' : '<span class="text-[10px] px-2 py-0.5 rounded bg-gray-600/20 text-gray-400 border border-gray-600/30">비공개</span>'}
+                                </h4>
+                                <span class="text-[11px] text-brand-neon font-bold">📍 ${getTournamentRegion(t)}</span>
+                                <span class="text-[11px] text-gray-400 font-mono ml-2">ID: ${t.id}</span>
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded bg-brand-border text-brand-orange font-semibold">${t.badge || '일반'}</span>
+                    </div>
+                    <p class="text-xs text-gray-300 line-clamp-2">${t.desc}</p>
+                    <div class="pt-2 border-t border-brand-border flex items-center justify-between text-xs">
+                        <span class="text-brand-yellow font-bold"><i class="fa-solid fa-utensils"></i> 투표 후보: <strong>${candCount}곳</strong></span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="editTournament('${t.id}')" class="px-2.5 py-1 rounded bg-brand-border hover:bg-gray-700 text-gray-200 text-xs font-semibold"><i class="fa-solid fa-pen-to-square"></i> 수정</button>
+                            <button onclick="toggleTournamentActive('${t.id}')" class="px-2.5 py-1 rounded ${t.active !== false ? 'bg-amber-600/30 text-amber-300 hover:bg-amber-600' : 'bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600'} text-xs font-semibold">${t.active !== false ? '비공개' : '공개'}</button>
+                            <button onclick="deleteTournament('${t.id}')" class="px-2.5 py-1 rounded bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-xs font-semibold"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function selectAdminRegion(region) {
+            selectedAdminRegion = region;
+            renderAdminTournamentsList();
+        }
+
+        function openAddTournamentModal() {
+            document.getElementById('modal-tournament-title').innerText = '새 지역 투표 추가';
+            document.getElementById('input-tournament-id').value = '';
+            document.getElementById('input-tournament-key').value = '';
+            document.getElementById('input-tournament-key').disabled = false;
+            document.getElementById('input-tournament-name').value = '';
+            renderRegionOptions(currentRegion);
+            document.getElementById('input-tournament-desc').value = '';
+            document.getElementById('input-tournament-icon').value = '🍔';
+            document.getElementById('input-tournament-badge').value = '인기 폭발';
+
+            document.getElementById('modal-tournament').classList.remove('hidden');
+        }
+
+        function editTournament(id) {
+            const t = DataService.getTournamentById(id);
+            if (!t) return;
+
+            document.getElementById('modal-tournament-title').innerText = '지역 투표 수정';
+            document.getElementById('input-tournament-id').value = t.id;
+            document.getElementById('input-tournament-key').value = t.id;
+            document.getElementById('input-tournament-key').disabled = true;
+            document.getElementById('input-tournament-name').value = getTournamentBaseTitle(t);
+            renderRegionOptions(getTournamentRegion(t));
+            document.getElementById('input-tournament-desc').value = t.desc;
+            document.getElementById('input-tournament-icon').value = t.icon || '🍲';
+            document.getElementById('input-tournament-badge').value = t.badge || '인기';
+
+            document.getElementById('modal-tournament').classList.remove('hidden');
+        }
+
+        function closeTournamentModal() {
+            document.getElementById('modal-tournament').classList.add('hidden');
+        }
+
+        function handleSaveTournament(e) {
+            e.preventDefault();
+            const originalId = document.getElementById('input-tournament-id').value;
+            const key = document.getElementById('input-tournament-key').value.trim();
+            const rawName = document.getElementById('input-tournament-name').value.trim();
+            const desc = document.getElementById('input-tournament-desc').value.trim();
+            const region = document.getElementById('input-tournament-region').value.trim();
+            if (!region) { showToast('서비스 지역을 입력해 주세요.'); return; }
+            const icon = document.getElementById('input-tournament-icon').value.trim();
+            const badge = document.getElementById('input-tournament-badge').value.trim();
+
+            const existing = originalId ? DataService.getTournamentById(originalId) : null;
+            // Clean base title without Top N
+            const baseTitle = rawName.replace(/\s*Top\s*\d+/gi, '').trim();
+
+            const tourneyObj = {
+                id: originalId || key,
+                title: baseTitle,
+                region: region,
+                desc: desc,
+                icon: icon,
+                badge: badge,
+                active: existing ? existing.active !== false : false,
+                candidates: existing ? existing.candidates : []
+            };
+
+            saveRegion(region);
+            DataService.saveTournament(tourneyObj);
+            if (existing && existing.active !== false) {
+                currentRegion = region;
+                localStorage.setItem("FOOD_CURRENT_REGION", region);
+            }
+            StatsService.addLog(`[투표 관리] '${baseTitle}' 투표가 저장되었습니다.`);
+
+            closeTournamentModal();
+            renderHomeCategories();
+            renderTierlist();
+            renderAdminTournamentsList();
+            renderAdminStats();
+            populateAdminCandidateTournamentsSelect();
+            showToast('✅ 투표가 성공적으로 저장되었습니다!');
+        }
+
+        function toggleTournamentActive(id) {
+            const t = DataService.getTournamentById(id);
+            if (!t) return;
+            t.active = t.active === false ? true : false;
+            DataService.saveTournament(t);
+            if (t.active) {
+                currentRegion = getTournamentRegion(t);
+                localStorage.setItem('FOOD_CURRENT_REGION', currentRegion);
+            }
+            renderHomeCategories();
+            renderTierlist();
+            renderAdminTournamentsList();
+            showToast(`투표 상태가 '${t.active ? '공개' : '비공개'}'로 변경되었습니다.`);
+        }
+
+        function deleteTournament(id) {
+            if (confirm(`정말로 '${id}' 투표를 삭제하시겠습니까? 등록된 모든 후보 맛집도 함께 삭제됩니다.`)) {
+                DataService.deleteTournament(id);
+                StatsService.addLog(`[투표 삭제] '${id}' 투표가 삭제되었습니다.`);
+                renderAdminTournamentsList();
+                renderAdminStats();
+                populateAdminCandidateTournamentsSelect();
+                renderAdminCandidatesList();
+                showToast('투표가 삭제되었습니다.');
+            }
+        }
+
+        // --- ADMIN TAB 3: CANDIDATE & NAVER LINK CRUD ---
+        function populateAdminCandidateTournamentsSelect() {
+            const selectFilter = document.getElementById('admin-candidate-filter-select');
+            const selectModal = document.getElementById('input-candidate-tournament');
+            const tournaments = DataService.getTournaments();
+
+            const currentVal = selectFilter.value;
+            selectFilter.innerHTML = '';
+            selectModal.innerHTML = '';
+
+            tournaments.forEach(t => {
+                const displayTitle = getTournamentDisplayTitle(t);
+                const opt1 = document.createElement('option');
+                opt1.value = t.id;
+                opt1.innerText = `${getTournamentRegion(t)} · ${t.icon || '🍲'} ${displayTitle}`;
+                selectFilter.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = t.id;
+                opt2.innerText = `${t.icon || '🍲'} ${displayTitle}`;
+                selectModal.appendChild(opt2);
+            });
+
+            if (currentVal && tournaments.some(t => t.id === currentVal)) {
+                selectFilter.value = currentVal;
+            }
+        }
+
+        function renderAdminCandidatesList() {
+            const filterSelect = document.getElementById('admin-candidate-filter-select');
+            const selectedTournamentId = filterSelect.value;
+            const container = document.getElementById('admin-candidates-grid-container');
+            const countBadge = document.getElementById('admin-candidate-count-badge');
+
+            container.innerHTML = '';
+
+            const tourney = DataService.getTournamentById(selectedTournamentId);
+            if (!tourney || !tourney.candidates || tourney.candidates.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-brand-card border border-brand-border rounded-xl">
+                        <p class="text-gray-400 text-xs">해당 투표에 등록된 맛집이 없습니다.</p>
+                        <button onclick="openAddCandidateModal()" class="mt-2 px-3 py-1.5 bg-brand-orange text-white text-xs font-bold rounded-lg">
+                            첫 번째 맛집 등록하기
+                        </button>
+                    </div>
+                `;
+                countBadge.innerText = 'Top 0 (0개)';
+                return;
+            }
+
+            const candCount = tourney.candidates.length;
+            countBadge.innerText = `총 ${candCount}개 맛집`;
+
+            tourney.candidates.forEach(c => {
+                const voteCount = getCandidateVotes(c);
+                const naverLink = getNaverMapUrl(c);
+                const card = document.createElement('div');
+                card.className = 'bg-brand-card border border-brand-border rounded-xl overflow-hidden flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-40">
+                            <img src="${c.img || IMAGE_PRESETS.korean}" alt="${c.name}" class="w-full h-full object-cover">
+                            <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 text-white text-[10px] font-bold">
+                                득표 현황 (${getCandidateVotes(c).toLocaleString()}표)
+                            </span>
+                            <a href="${naverLink}" target="_blank" class="absolute top-2 right-2 px-2 py-0.5 rounded bg-[#03C75A] hover:bg-[#02b351] text-white text-[10px] font-black flex items-center gap-1 shadow-md">
+                                <i class="fa-solid fa-n"></i> 네이버 지도
+                            </a>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-white text-base">${c.name}</h4>
+                                <span class="text-[11px] px-2 py-0.5 rounded bg-brand-border text-brand-yellow font-semibold">${c.menu}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 line-clamp-2">${c.desc}</p>
+                            <div class="pt-1 text-[11px] text-gray-500 truncate flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[#03C75A]"></i>
+                                <span class="truncate">${c.naverUrl || '자동 네이버 검색 연동'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-brand-dark/50 border-t border-brand-border flex items-center justify-between">
+                        <span class="text-[10px] text-gray-500 font-mono">ID: ${c.id}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="editCandidate('${tourney.id}', ${c.id})" class="px-2.5 py-1 rounded bg-brand-border hover:bg-gray-700 text-gray-200 text-xs font-semibold">
+                                <i class="fa-solid fa-pen"></i> 수정
+                            </button>
+                            <button onclick="deleteCandidate('${tourney.id}', ${c.id})" class="px-2.5 py-1 rounded bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-xs font-semibold">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAddCandidateModal() {
+            const filterSelect = document.getElementById('admin-candidate-filter-select');
+            document.getElementById('modal-candidate-title').innerText = '신규 맛집 등록';
+            document.getElementById('input-candidate-id').value = '';
+            document.getElementById('input-candidate-tournament').value = filterSelect.value;
+            document.getElementById('input-candidate-name').value = '';
+            document.getElementById('input-candidate-menu').value = '';
+            document.getElementById('input-candidate-naver').value = '';
+            document.getElementById('input-candidate-desc').value = '';
+            document.getElementById('input-candidate-img').value = IMAGE_PRESETS.korean;
+            previewCandidateImage(IMAGE_PRESETS.korean);
+
+            document.getElementById('modal-candidate').classList.remove('hidden');
+        }
+
+        function editCandidate(tourneyId, candidateId) {
+            const tourney = DataService.getTournamentById(tourneyId);
+            if (!tourney) return;
+            const candidate = (tourney.candidates || []).find(c => c.id === candidateId);
+            if (!candidate) return;
+
+            document.getElementById('modal-candidate-title').innerText = '맛집 정보 수정';
+            document.getElementById('input-candidate-id').value = candidate.id;
+            document.getElementById('input-candidate-tournament').value = tourneyId;
+            document.getElementById('input-candidate-name').value = candidate.name;
+            document.getElementById('input-candidate-menu').value = candidate.menu;
+            document.getElementById('input-candidate-naver').value = candidate.naverUrl || getNaverMapUrl(candidate);
+            document.getElementById('input-candidate-desc').value = candidate.desc;
+            document.getElementById('input-candidate-img').value = candidate.img || '';
+            previewCandidateImage(candidate.img || '');
+
+            document.getElementById('modal-candidate').classList.remove('hidden');
+        }
+
+        function closeCandidateModal() {
+            document.getElementById('modal-candidate').classList.add('hidden');
+        }
+
+        function handleCandidateNameChange(name) {
+            const naverInput = document.getElementById('input-candidate-naver');
+            if (!naverInput.value || naverInput.value.includes('map.naver.com')) {
+                naverInput.value = `https://map.naver.com/p/search/${encodeURIComponent(name.trim())}`;
+            }
+        }
+
+        function autoGenerateNaverLink() {
+            const name = document.getElementById('input-candidate-name').value.trim();
+            if (!name) {
+                showToast('⚠️ 먼저 식당 이름을 입력해주세요.');
+                return;
+            }
+            const generated = `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
+            document.getElementById('input-candidate-naver').value = generated;
+            showToast('✅ 네이버 지도 링크가 자동 생성되었습니다!');
+        }
+
+        function previewCandidateImage(url) {
+            const img = document.getElementById('candidate-preview-img');
+            const placeholder = document.getElementById('candidate-preview-placeholder');
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                img.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        function applyImagePreset(type) {
+            const url = IMAGE_PRESETS[type] || IMAGE_PRESETS.korean;
+            document.getElementById('input-candidate-img').value = url;
+            previewCandidateImage(url);
+        }
+
+        function handleSaveCandidate(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('input-candidate-id').value;
+            const tourneyId = document.getElementById('input-candidate-tournament').value;
+            const name = document.getElementById('input-candidate-name').value.trim();
+            const menu = document.getElementById('input-candidate-menu').value.trim();
+            const naverUrl = document.getElementById('input-candidate-naver').value.trim() || `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
+            const desc = document.getElementById('input-candidate-desc').value.trim();
+            const img = document.getElementById('input-candidate-img').value.trim();
+
+            const candidateData = {
+                id: idVal ? Number(idVal) : null,
+                name: name,
+                menu: menu,
+                naverUrl: naverUrl,
+                desc: desc,
+                img: img
+            };
+
+            DataService.saveCandidate(tourneyId, candidateData);
+            
+            const updatedTourney = DataService.getTournamentById(tourneyId);
+            const candCount = (updatedTourney.candidates || []).length;
+            StatsService.addLog(`[맛집 편집] '${name}' 정보 저장 (소속: ${getTournamentDisplayTitle(updatedTourney)}, 현재 ${candCount}개)`);
+
+            closeCandidateModal();
+            renderAdminCandidatesList();
+            renderAdminTournamentsList();
+            renderAdminStats();
+            showToast(`✅ 맛집 '${name}' 저장 완료! (현재 ${candCount}개)`);
+        }
+
+        function deleteCandidate(tourneyId, candidateId) {
+            if (confirm('해당 맛집을 투표 후보에서 삭제하시겠습니까?')) {
+                DataService.deleteCandidate(tourneyId, candidateId);
+                const updatedTourney = DataService.getTournamentById(tourneyId);
+                const candCount = (updatedTourney.candidates || []).length;
+                StatsService.addLog(`[맛집 삭제] ID ${candidateId} 맛집 삭제 (현재 ${candCount}개)`);
+                renderAdminCandidatesList();
+                renderAdminTournamentsList();
+                renderAdminStats();
+                showToast(`맛집이 삭제되었습니다. (현재 ${candCount}개)`);
+            }
+        }
+
+        // --- ADMIN TAB 4: SYSTEM & BACKEND INTEGRATION ---
+        function saveSystemSettings() {
+            const apiUrl = document.getElementById('setting-api-url').value;
+            const authMode = document.getElementById('setting-auth-mode').value;
+            const voteLimit = document.getElementById('setting-vote-limit').value;
+
+            const settings = { apiUrl, authMode, voteLimit };
+            localStorage.setItem(CONFIG.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+            StatsService.addLog(`[시스템 설정] 백엔드 및 투표 정책 설정이 업데이트되었습니다.`);
+            showToast('✅ 시스템 설정이 저장되었습니다!');
+        }
+
+        function exportDataJSON() {
+            const data = {
+                tournaments: DataService.getTournaments(),
+                stats: StatsService.getStats(),
+                exportedAt: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `seongsu_food_data_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('💾 데이터가 JSON 파일로 다운로드되었습니다.');
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.tournaments && Array.isArray(parsed.tournaments)) {
+                        DataService.saveTournaments(parsed.tournaments);
+                        if (parsed.stats) {
+                            localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(parsed.stats));
+                        }
+                        refreshAdminData();
+                        showToast('✅ JSON 데이터 복원이 완료되었습니다!');
+                    } else {
+                        showToast('❌ 잘못된 데이터 형식입니다.');
+                    }
+                } catch (err) {
+                    showToast('❌ 파일 읽기 오류가 발생했습니다.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetToDefault() {
+            if (confirm('모든 변경사항과 통계를 초기 상태로 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                DataService.resetToDefault();
+                refreshAdminData();
+                showToast('🔄 모든 데이터가 초기 상태로 복구되었습니다.');
+            }
+        }
+
+        // ========================================================
+        // 8. MODALS & UTILS
+        // ========================================================
+        function openLoginModal() {
+            document.getElementById('modal-login').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('modal-login').classList.add('hidden');
+        }
+
+        function switchLoginTab(tab) {
+            const userBtn = document.getElementById('login-tab-user-btn');
+            const adminBtn = document.getElementById('login-tab-admin-btn');
+            const userForm = document.getElementById('login-form-user');
+            const adminForm = document.getElementById('login-form-admin');
+
+            if (tab === 'user') {
+                userBtn.className = 'flex-1 py-2 rounded-lg bg-brand-orange text-white transition-all';
+                adminBtn.className = 'flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all';
+                userForm.classList.remove('hidden');
+                adminForm.classList.add('hidden');
+            } else {
+                userBtn.className = 'flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all';
+                adminBtn.className = 'flex-1 py-2 rounded-lg bg-indigo-600 text-white transition-all';
+                userForm.classList.add('hidden');
+                adminForm.classList.remove('hidden');
+            }
+        }
+
+        function simulatedLogin(provider) {
+            closeLoginModal();
+            const providerName = provider === 'kakao' ? '카카오' : '네이버';
+            AuthService.login('user', `${providerName} 유저`);
+            showToast(`✅ ${providerName} 로그인 성공! 오늘의 투표권이 활성화되었습니다.`);
+            switchToUserView();
+        }
+
+        function submitAdminLogin() {
+            const id = document.getElementById('admin-login-id').value.trim();
+            const pw = document.getElementById('admin-login-pw').value.trim();
+
+            if (id === 'admin' && pw === '1234') {
+                closeLoginModal();
+                AuthService.login('admin', '슈퍼 관리자 (admin)');
+                showToast('🛡️ 관리자로 로그인되었습니다. 제어 콘솔로 이동합니다.');
+                switchToAdminView('stats');
+            } else {
+                showToast('❌ 아이디 또는 비밀번호가 올바르지 않습니다 (체험: admin / 1234)');
+            }
+        }
+
+        function openBackendGuideModal() {
+            document.getElementById('modal-backend-guide').classList.remove('hidden');
+        }
+
+        function closeBackendGuideModal() {
+            document.getElementById('modal-backend-guide').classList.add('hidden');
+        }
+
+        // --- INSTAGRAM SHARE MODAL ---
         function openShareModal() {
             if (!myUserTierResult) return;
 
             const winner = myUserTierResult.s[0];
-            document.getElementById('story-category-title').innerText = currentTournament.title;
-            document.getElementById('story-winner-img').src = winner.img;
+            document.getElementById('story-category-title').innerText = getTournamentDisplayTitle(currentTournament);
+            document.getElementById('story-winner-img').src = winner.img || IMAGE_PRESETS.korean;
             document.getElementById('story-winner-name').innerText = winner.name;
             document.getElementById('story-winner-desc').innerText = `${winner.desc} (${winner.menu})`;
 
             document.getElementById('story-tier-s').innerText = winner.name;
             document.getElementById('story-tier-a').innerText = myUserTierResult.a.map(i => i.name).join(', ') || '없음';
-            document.getElementById('story-tier-b').innerText = myUserTierResult.b.map(i => i.name).join(', ') || '없음';
+            document.getElementById('story-tier-b').innerText = myUserTierResult.b.map(i => i.name).join(', ') || '기타 후보군';
 
             document.getElementById('modal-share').classList.remove('hidden');
         }
@@ -827,14 +2699,14 @@
 
         function downloadStoryImage() {
             const captureArea = document.getElementById('story-card-capture');
-            showToast('📸 이미지 생성 중입니다...');
+            showToast('📸 카드 생성 중입니다...');
 
             html2canvas(captureArea, {
                 scale: 2,
                 backgroundColor: '#0F0F12'
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = `성수동맛집_티어표_${Date.now()}.png`;
+                link.download = `성수동맛집_티어_${Date.now()}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 showToast('✅ 인스타그램 스토리 카드가 저장되었습니다!');
@@ -844,22 +2716,11 @@
         }
 
         function copyServiceLink() {
-            document.execCommand('copy');
-            showToast('🔗 서비스 공유 링크가 복사되었습니다!');
-        }
-
-        // --- LOGIN MODAL & UTILS ---
-        function openLoginModal() {
-            document.getElementById('modal-login').classList.remove('hidden');
-        }
-
-        function closeLoginModal() {
-            document.getElementById('modal-login').classList.add('hidden');
-        }
-
-        function simulatedLogin(provider) {
-            closeLoginModal();
-            showToast(`✅ ${provider} 소셜 인증 완료! 오늘 투표권이 활성화되었습니다.`);
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('🔗 서비스 공유 링크가 복사되었습니다!');
+            }).catch(() => {
+                showToast('🔗 클립보드 복사 완료!');
+            });
         }
 
         function showToast(message) {
