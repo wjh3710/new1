@@ -16,6 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Chart.js for Admin Dashboard Statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase Auth client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         tailwind.config = {
@@ -80,19 +82,22 @@
         @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
         @media (max-width: 640px) {
             html { -webkit-text-size-adjust: 100%; }
-            body { line-height: 1.55; }
+            body { line-height: 1.6; }
             header { padding: .65rem .75rem !important; }
             header > div { flex-wrap: wrap; gap: .65rem; }
-            header nav { width: 100%; justify-content: space-between; gap: .35rem !important; }
-            #user-nav-group { flex: 1; }
-            #user-nav-group button, #btn-admin-toggle { min-height: 2.65rem; padding: .5rem .65rem !important; font-size: .75rem !important; }
+            header nav { width: 100%; justify-content: space-between; gap: .4rem !important; }
+            #user-nav-group { flex: 1 1 auto; min-width: 0; }
+            #user-nav-group button, #btn-admin-toggle { min-height: 2.75rem; padding: .5rem .65rem !important; font-size: .8125rem !important; line-height: 1.35; white-space: normal; }
             #auth-nav-container { max-width: 100%; }
             main { padding: .9rem !important; }
             main, main * { min-width: 0; }
-            h1, h2, h3, h4, p, label, button, a, span { overflow-wrap: anywhere; }
-            h1 { font-size: clamp(1.45rem, 6vw, 2rem) !important; line-height: 1.35 !important; }
+            h1, h2, h3, h4, p, label { overflow-wrap: break-word; word-break: keep-all; }
+            h1 { font-size: clamp(1.4rem, 6vw, 1.85rem) !important; line-height: 1.35 !important; }
             h2 { font-size: 1.1rem !important; line-height: 1.45 !important; }
-            .text-xs { line-height: 1.55; }
+            p, label { line-height: 1.65; }
+            .text-xs { font-size: .75rem; line-height: 1.55; }
+            button, a { line-height: 1.4; }
+            .flex > *, .grid > * { min-width: 0; }
             #home-region-filters button, #admin-region-tabs button { min-height: 2.6rem; }
             #admin-region-tabs { width: 100%; }
             #admin-region-tabs button { flex: 1 1 auto; }
@@ -100,9 +105,15 @@
             #admin-tournaments-list-container > div { padding: .9rem; }
             #admin-tournaments-list-container .font-mono { overflow-wrap: anywhere; }
             input, select, textarea { max-width: 100%; font-size: 16px !important; }
-            table { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+            table { width: 100%; min-width: 34rem; }
+            [role="dialog"] { width: calc(100vw - 1rem); max-width: 100%; }
             [role="dialog"] { max-height: calc(100dvh - 1rem); overflow-y: auto; }
             .custom-scrollbar { scrollbar-width: thin; }
+        }
+        @media (max-width: 380px) {
+            header { padding-inline: .6rem !important; }
+            main { padding: .7rem !important; }
+            #user-nav-group button, #btn-admin-toggle { padding-inline: .45rem !important; font-size: .75rem !important; }
         }
     </style>
 </head>
@@ -115,12 +126,9 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                 <i class="fa-solid fa-shield-halved text-indigo-400"></i>
                 <span class="text-white">관리자(ADMIN) 제어 콘솔 모드 활성화됨</span>
-                <span class="hidden sm:inline text-indigo-300 font-normal">| 백엔드 연동 전 프론트엔드 모의 환경(Mock Mode)</span>
+
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="openBackendGuideModal()" class="text-[11px] underline hover:text-white flex items-center gap-1">
-                    <i class="fa-solid fa-code"></i> 백엔드 연동 명세
-                </button>
                 <button onclick="switchToUserView()" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] transition-all flex items-center gap-1">
                     <i class="fa-solid fa-eye"></i> 사용자 화면 바로가기
                 </button>
@@ -161,7 +169,7 @@
                 </div>
 
                 <!-- Admin Console Direct Toggle Button -->
-                <button onclick="toggleAdminView()" id="btn-admin-toggle" class="px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                <button onclick="toggleAdminView()" id="btn-admin-toggle" class="hidden px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
                     <span id="admin-btn-label">관리자 콘솔</span>
                 </button>
@@ -326,7 +334,7 @@
                     <i class="fa-solid fa-store"></i> 식당 / 네이버링크 편집
                 </button>
                 <button onclick="switchAdminTab('system')" id="tab-btn-system" class="px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm bg-brand-card text-gray-400 hover:text-white border border-brand-border transition-all flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-sliders"></i> 시스템 설정 & 백엔드 연동
+                    <i class="fa-solid fa-sliders"></i> 시스템 설정
                 </button>
             </div>
 
@@ -391,12 +399,9 @@
                     <!-- Center & Right: Daily Trends & Tournament Comparison -->
                     <div class="bg-brand-card border border-brand-border rounded-xl p-5 space-y-3 lg:col-span-2">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-chart-column text-indigo-400"></i> 최근 일자별 투표 트렌드 (Mock)
-                            </h3>
-                            <button onclick="injectSampleVotes()" class="text-[11px] px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1">
-                                <i class="fa-solid fa-bolt"></i> 가상 투표 50건 주입 테스트
-                            </button>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-column text-indigo-400"></i> 최근 일자별 투표 추이</h3>
+                            <button onclick="refreshAdminStats()" class="text-[11px] px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-bolt"></i> 통계 새로고침</button>
                         </div>
                         <div class="relative h-56">
                             <canvas id="trendChart"></canvas>
@@ -489,52 +494,8 @@
                 </div>
             </div>
 
-            <!-- ADMIN TAB 4: SYSTEM & BACKEND INTEGRATION SETTINGS -->
+            <!-- ADMIN TAB 4: SYSTEM SETTINGS -->
             <div id="admin-tab-system" class="hidden space-y-6">
-                <!-- Backend API Integration Preview Card -->
-                <div class="bg-brand-card border border-indigo-500/40 rounded-2xl p-5 space-y-4">
-                    <div class="flex justify-between items-start">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl">
-                                <i class="fa-solid fa-server"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-white text-base">백엔드 API 연동 환경 설정</h3>
-                                <p class="text-xs text-gray-400">현재는 브라우저 LocalStorage 기반 Mock으로 작동 중입니다. 추후 백엔드 API 주소를 설정하면 바로 전환됩니다.</p>
-                            </div>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            MOCK MODE
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-gray-300">백엔드 Base API URL</label>
-                            <input type="text" id="setting-api-url" value="https://api.seongsu-food.kr/v1" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-                            <p class="text-[11px] text-gray-500">Spring Boot, FastAPI, Express 등 백엔드 서버 엔드포인트</p>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-gray-300">인증 방식 (Authentication)</label>
-                            <select id="setting-auth-mode" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-                                <option value="jwt">JWT Bearer Token (권장: Authorization Header)</option>
-                                <option value="cookie">HttpOnly Secure Cookie (세션 방식)</option>
-                                <option value="mock" selected>Mock Local Storage (현재 프론트엔드 모의)</option>
-                            </select>
-                            <p class="text-[11px] text-gray-500">관리자/일반 사용자 로그인 토큰 검증 규격</p>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-2 border-t border-brand-border">
-                        <button onclick="openBackendGuideModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1.5">
-                            <i class="fa-solid fa-book-open"></i> 백엔드 API 명세 및 구현 가이드 보기
-                        </button>
-                        <button onclick="saveSystemSettings()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md">
-                            설정 저장하기
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Abuse Prevention & Voting Policy Settings -->
                 <div class="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
                     <div class="flex items-center gap-3">
@@ -588,7 +549,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-white text-base">데이터 백업 / 복원 및 공장 초기화</h3>
-                            <p class="text-xs text-gray-400">현재 로컬 브라우저에 저장된 투표 및 식당 데이터를 백업하거나 초기 상태로 복구합니다.</p>
+                            <p class="text-xs text-gray-400">저장된 투표 및 식당 데이터를 JSON으로 백업하거나 초기 상태로 복구합니다.</p>
                         </div>
                     </div>
 
@@ -699,55 +660,22 @@
                     👑
                 </div>
                 <h3 class="text-lg font-bold text-white">맛집 픽 로그인</h3>
-                <p class="text-xs text-gray-400">사용자 계정 또는 관리자 계정으로 접속할 수 있습니다.</p>
+                <p class="text-xs text-gray-400">이메일로 로그인하거나 가입할 수 있습니다. 관리자 권한은 Supabase에서 관리합니다.</p>
             </div>
 
-            <!-- Login Tabs -->
-            <div class="flex rounded-xl bg-brand-dark p-1 border border-brand-border text-xs font-bold">
-                <button onclick="switchLoginTab('user')" id="login-tab-user-btn" class="flex-1 py-2 rounded-lg bg-brand-orange text-white transition-all">
-                    일반 사용자
-                </button>
-                <button onclick="switchLoginTab('admin')" id="login-tab-admin-btn" class="flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all">
-                    관리자(Admin)
-                </button>
-            </div>
-
-            <!-- USER LOGIN FORM -->
-            <div id="login-form-user" class="space-y-2.5 pt-1">
-                <p class="text-xs text-gray-400 text-center pb-1">소셜 계정 인증으로 오늘 투표권을 획득하세요.</p>
-                <button onclick="simulatedLogin('kakao')" class="w-full py-3 rounded-xl bg-[#FEE500] text-[#191919] font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
-                    <i class="fa-solid fa-comment"></i> 카카오로 3초 만에 시작하기
-                </button>
-                <button onclick="simulatedLogin('naver')" class="w-full py-3 rounded-xl bg-[#03C75A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
-                    <i class="fa-solid fa-N"></i> 네이버로 시작하기
-                </button>
-            </div>
-
-            <!-- ADMIN LOGIN FORM -->
-            <div id="login-form-admin" class="hidden space-y-3 pt-1">
+            <!-- USER LOGIN / SIGNUP FORM -->
+            <form id="login-form-user" class="space-y-3 pt-1" onsubmit="submitSupabaseAuth(event)">
+                <p class="text-xs text-gray-400 text-center">이메일로 회원가입하거나 로그인하세요.</p>
                 <div class="space-y-2">
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-300 block mb-1">관리자 아이디</label>
-                        <input type="text" id="admin-login-id" value="admin" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-300 block mb-1">비밀번호</label>
-                        <input type="password" id="admin-login-pw" value="1234" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
-                    </div>
+                    <label for="auth-email" class="sr-only">이메일</label>
+                    <input id="auth-email" type="email" autocomplete="email" required placeholder="이메일" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-brand-orange">
+                    <label for="auth-password" class="sr-only">비밀번호</label>
+                    <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="비밀번호 (6자 이상)" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-brand-orange">
                 </div>
-
-                <button onclick="submitAdminLogin()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-shield-halved"></i> 관리자 로그인
-                </button>
-
-                <div class="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/30 text-[11px] text-indigo-300 space-y-1">
-                    <div class="font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-circle-info"></i> 프론트엔드 모의 테스트 안내
-                    </div>
-                    <p>현재 백엔드 연동 전이므로 아이디: <code class="text-white font-mono">admin</code> / 암호: <code class="text-white font-mono">1234</code>로 바로 로그인 가능합니다.</p>
-                </div>
-            </div>
-
+                <button id="auth-submit-button" type="submit" class="w-full py-3 rounded-xl bg-brand-orange text-white font-bold text-sm hover:opacity-90 transition-all">로그인</button>
+                <button id="auth-mode-toggle" type="button" onclick="toggleSupabaseAuthMode()" class="w-full py-2 text-xs font-semibold text-gray-300 hover:text-white">처음이신가요? 회원가입</button>
+                <p id="auth-form-message" class="hidden text-xs text-center leading-relaxed" aria-live="polite"></p>
+            </form>
             <p class="text-[11px] text-gray-500 text-center">
                 로그인 시 서비스 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
             </p>
@@ -921,101 +849,6 @@
     </div>
 
 
-    <!-- ================= MODAL 5: BACKEND INTEGRATION SPECIFICATION GUIDE ================= -->
-    <div id="modal-backend-guide" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-brand-card border border-indigo-500/40 rounded-2xl max-w-2xl w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button onclick="closeBackendGuideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg">
-                    <i class="fa-solid fa-code"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-white">향후 백엔드 API 연동 구조 & 명세 가이드</h3>
-                    <p class="text-xs text-gray-400">현재 프론트엔드 모듈은 아래 REST API 명세와 1:1 호환되도록 설계되어 있습니다.</p>
-                </div>
-            </div>
-
-            <div class="space-y-4 text-xs">
-                <!-- Architecture Diagram -->
-                <div class="p-3.5 rounded-xl bg-brand-dark border border-brand-border space-y-2">
-                    <span class="font-bold text-indigo-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-diagram-project"></i> 권한 및 화면 분리 아키텍처
-                    </span>
-                    <p class="text-gray-300 leading-relaxed">
-                        • <strong>인증 (Auth):</strong> 사용자가 로그인하면 백엔드는 JWT Access Token과 User Object <code class="text-brand-orange font-mono">{ role: 'admin' | 'user', username, ... }</code>를 반환합니다.<br>
-                        • <strong>라우팅 분기:</strong> <code class="text-indigo-300 font-mono">role === 'admin'</code>이면 즉시 관리자 대시보드(<code class="text-gray-300 font-mono">#view-admin</code>)가 렌더링되고, <code class="text-emerald-400 font-mono">role === 'user'</code>이면 메인 투표 화면이 열립니다.<br>
-                        • <strong>데이터 통신:</strong> 현재 프론트엔드의 <code class="text-brand-yellow font-mono">DataService</code> 및 <code class="text-brand-yellow font-mono">StatsService</code>가 백엔드 API 호출로 즉시 치환되도록 모듈화되어 있습니다.
-                    </p>
-                </div>
-
-                <!-- API Endpoints Table -->
-                <div class="space-y-2">
-                    <span class="font-bold text-white">주요 REST API 엔드포인트 명세 (준비 완료)</span>
-                    <div class="border border-brand-border rounded-xl overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-brand-dark text-gray-400 text-[11px]">
-                                <tr>
-                                    <th class="p-2.5">Method</th>
-                                    <th class="p-2.5">Endpoint</th>
-                                    <th class="p-2.5">권한</th>
-                                    <th class="p-2.5">설명</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-brand-border font-mono text-[11px]">
-                                <tr>
-                                    <td class="p-2 text-emerald-400 font-bold">POST</td>
-                                    <td class="p-2 text-gray-200">/api/v1/auth/login</td>
-                                    <td class="p-2 text-gray-400">All</td>
-                                    <td class="p-2 text-gray-300 font-sans">사용자 및 관리자 계정 로그인, JWT 발급</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2 text-blue-400 font-bold">GET</td>
-                                    <td class="p-2 text-gray-200">/api/v1/tournaments</td>
-                                    <td class="p-2 text-gray-400">All</td>
-                                    <td class="p-2 text-gray-300 font-sans">투표 목록 및 후보 맛집(네이버 링크 포함) 조회</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2 text-indigo-400 font-bold">POST/PUT</td>
-                                    <td class="p-2 text-gray-200">/api/v1/tournaments</td>
-                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
-                                    <td class="p-2 text-gray-300 font-sans">관리자: 투표 생성 및 수정</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2 text-indigo-400 font-bold">POST/PUT</td>
-                                    <td class="p-2 text-gray-200">/api/v1/candidates</td>
-                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
-                                    <td class="p-2 text-gray-300 font-sans">관리자: 맛집 추가 및 정보(이름, 메뉴, 사진, 네이버링크) 수정</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2 text-emerald-400 font-bold">POST</td>
-                                    <td class="p-2 text-gray-200">/api/v1/votes/record</td>
-                                    <td class="p-2 text-gray-400">User</td>
-                                    <td class="p-2 text-gray-300 font-sans">지역별 식당 픽 및 메뉴 추가 투표 기록</td>
-                                </tr>
-                                <tr>
-                                    <td class="p-2 text-blue-400 font-bold">GET</td>
-                                    <td class="p-2 text-gray-200">/api/v1/admin/stats</td>
-                                    <td class="p-2 text-indigo-300 font-bold">Admin</td>
-                                    <td class="p-2 text-gray-300 font-sans">관리자: 지역별 누적 득표 및 일별 투표 현황 조회</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-3 flex justify-end">
-                <button onclick="closeBackendGuideModal()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs">
-                    확인 완료
-                </button>
-            </div>
-        </div>
-    </div>
-
-
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-orange text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
         <i class="fa-solid fa-circle-check"></i> <span id="toast-message">알림 메시지</span>
@@ -1028,9 +861,9 @@
             <div class="flex flex-wrap justify-center items-center gap-4 text-gray-400">
                 <span class="font-bold">맛집 픽 · Live Food Vote</span>
                 <span>•</span>
-                <button onclick="switchToAdminView('stats')" class="text-indigo-400 hover:underline">관리자 콘솔 바로가기</button>
+                <button id="footer-admin-link" onclick="switchToAdminView('stats')" class="hidden text-indigo-400 hover:underline">관리자 콘솔 바로가기</button>
                 <span>•</span>
-                <button onclick="openBackendGuideModal()" class="text-gray-400 hover:text-white">API 연동 가이드</button>
+
             </div>
             <p>한 표씩 쌓이는 선택 데이터로 지역별 맛집의 인기 흐름을 보여주는 참여형 랭킹입니다.</p>
             <p class="text-gray-600">© 2026 Seongsu Food Tournament. All rights reserved.</p>
@@ -1051,9 +884,15 @@
                 SETTINGS: 'FOOD_TOURNAMENT_SETTINGS_V2',
                 AUTH: 'FOOD_TOURNAMENT_AUTH_V2'
             },
-            API_BASE: 'https://api.seongsu-food.kr/v1',
-            USE_MOCK: true // [BACKEND READY]: Set to false when connecting to real backend API
+            SUPABASE_URL: 'https://hexjmybrktvcjueooskp.supabase.co',
+            SUPABASE_ANON_KEY: 'sb_publishable_oVRXjpPP-cfCgh3sbVtlgw_d4ZhX65b'
         };
+
+        const supabaseClient = window.supabase && CONFIG.SUPABASE_ANON_KEY
+            ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY)
+            : null;
+        let supabaseAdminVerified = false;
+        let supabaseSessionUserId = null;
 
         const REGION_STORAGE_KEY = "FOOD_REGIONS_V1";
 
@@ -1146,7 +985,7 @@
         }
 
         // ========================================================
-        // 2. AUTH SERVICE (Role-Based Authentication Mock)
+        // 2. SUPABASE AUTH SERVICE
         // ========================================================
         const AuthService = {
             getUser() {
@@ -1165,33 +1004,32 @@
                 }
                 this.updateAuthUI();
             },
-            login(role, username) {
-                const user = {
-                    role: role,
-                    username: username || (role === 'admin' ? '시스템 관리자' : '성수 미식가'),
-                    token: 'mock-jwt-token-' + Date.now(),
-                    loginAt: new Date().toISOString()
-                };
-                this.setUser(user);
-                return user;
-            },
             logout() {
+                if (supabaseClient) supabaseClient.auth.signOut();
+                supabaseAdminVerified = false;
                 this.setUser(null);
                 showToast('로그아웃되었습니다.');
                 switchToUserView();
             },
             isAdmin() {
                 const user = this.getUser();
-                return user && user.role === 'admin';
+                return Boolean(supabaseAdminVerified && user && user.role === 'admin');
             },
             updateAuthUI() {
                 const user = this.getUser();
+                const isAdmin = this.isAdmin();
                 const container = document.getElementById('auth-nav-container');
                 const roleBadge = document.getElementById('header-role-badge');
                 const adminBanner = document.getElementById('admin-mode-banner');
+                const adminToggle = document.getElementById('btn-admin-toggle');
+                const footerAdminLink = document.getElementById('footer-admin-link');
+                const emptyStateAdminCta = document.getElementById('admin-empty-state-cta');
+                if (adminToggle) adminToggle.classList.toggle('hidden', !isAdmin);
+                if (footerAdminLink) footerAdminLink.classList.toggle('hidden', !isAdmin);
+                if (emptyStateAdminCta) emptyStateAdminCta.classList.toggle('hidden', !isAdmin);
 
                 if (user) {
-                    if (user.role === 'admin') {
+                    if (isAdmin) {
                         roleBadge.classList.remove('hidden');
                         adminBanner.classList.remove('hidden');
                         container.innerHTML = `
@@ -1232,220 +1070,236 @@
         };
 
         // ========================================================
-        // 3. DATA SERVICE (Backend-Compatible CRUD & LocalStorage)
+        // 3. SUPABASE DATA SERVICES
         // ========================================================
+        let appStateCache = {
+            tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)),
+            regions: [],
+            settings: {}
+        };
+        const candidateTournamentIds = new WeakMap();
+        let voteDashboard = {
+            stats: { totalVotes: 0, todayVotes: 0, dailyTrend: [0, 0, 0, 0, 0, 0, 0] },
+            candidateCounts: {}, menuCounts: {}, myDirect: {}, myMenus: {}, recentLogs: []
+        };
+
+        function getCurrentUserId() {
+            return supabaseSessionUserId;
+        }
+
+        function getLegacyStateForMigration() {
+            const parse = (key, fallback) => {
+                try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }
+                catch (error) { return fallback; }
+            };
+            const legacyTournaments = parse(CONFIG.STORAGE_KEYS.DATA, null);
+            const legacyRegions = parse(REGION_STORAGE_KEY, []);
+            const legacySettings = parse(CONFIG.STORAGE_KEYS.SETTINGS, {});
+            const legacyStats = parse(CONFIG.STORAGE_KEYS.STATS, null);
+            const settings = { ...(legacySettings && typeof legacySettings === 'object' ? legacySettings : {}) };
+            if (legacyStats && typeof legacyStats === 'object') {
+                settings.statsBaseline = { ...legacyStats, importedOn: new Date().toISOString().slice(0, 10) };
+            }
+            return {
+                tournaments: Array.isArray(legacyTournaments) ? legacyTournaments : JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)),
+                regions: Array.isArray(legacyRegions) ? legacyRegions : [],
+                settings
+            };
+        }
+
         const DataService = {
-            getTournaments() {
-                try {
-                    const data = localStorage.getItem(CONFIG.STORAGE_KEYS.DATA);
-                    if (data) {
-                        const tournaments = JSON.parse(data);
-                        const menuTitles = { gamjatang: '감자탕·해장국·국밥', dessert: '빵·케이크·디저트', pasta: '파스타·피자·스테이크' };
-                        let changed = false;
-                        tournaments.forEach(tournament => {
-                            if (!tournament.region) { tournament.region = '성수'; changed = true; }
-                            const previousTitle = tournament.title || '';
-                            if (menuTitles[tournament.id] && (/감자탕.*국물|디저트.*베이커리|데이트.*양식/.test(previousTitle))) {
-                                tournament.title = menuTitles[tournament.id];
-                                changed = true;
-                            }
-                        });
-                        if (changed) this.saveTournaments(tournaments);
-                        return tournaments;
-                    }
-                } catch (e) {
-                    console.error('Failed to parse tournaments', e);
+            async initialize(silent = false) {
+                const { data, error } = await supabaseClient
+                    .from('app_state').select('state').eq('id', 1).maybeSingle();
+                if (error) {
+                    console.error('Failed to load Supabase app state', error);
+                    if (!silent) showToast('Supabase 데이터 로드에 실패했습니다. SQL 설정을 확인해 주세요.');
+                    return false;
                 }
-                this.saveTournaments(DEFAULT_TOURNAMENTS);
-                return DEFAULT_TOURNAMENTS;
+                if (data?.state) {
+                    appStateCache = {
+                        tournaments: Array.isArray(data.state.tournaments) ? data.state.tournaments : JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)),
+                        regions: Array.isArray(data.state.regions) ? data.state.regions : [],
+                        settings: data.state.settings && typeof data.state.settings === 'object' ? data.state.settings : {}
+                    };
+                } else {
+                    appStateCache = getLegacyStateForMigration();
+                    if (AuthService.isAdmin()) await this.persist();
+                }
+                return true;
             },
-            saveTournaments(tournaments) {
-                localStorage.setItem(CONFIG.STORAGE_KEYS.DATA, JSON.stringify(tournaments));
+            async persist() {
+                if (!AuthService.isAdmin()) {
+                    showToast('관리자 권한이 있어야 데이터를 저장할 수 있습니다.');
+                    return false;
+                }
+                const { error } = await supabaseClient.from('app_state').upsert({
+                    id: 1,
+                    state: appStateCache,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' });
+                if (error) {
+                    console.error('Failed to save Supabase app state', error);
+                    showToast(`저장 실패: ${error.message}`);
+                    return false;
+                }
+                return true;
+            },
+            getTournaments() {
+                appStateCache.tournaments.forEach(tournament => (tournament.candidates || []).forEach(candidate => candidateTournamentIds.set(candidate, String(tournament.id))));
+                return appStateCache.tournaments;
+            },
+            async saveTournaments(tournaments) {
+                appStateCache.tournaments = tournaments;
+                return this.persist();
+            },
+            getRegions() { return appStateCache.regions; },
+            async saveRegions(regions) {
+                appStateCache.regions = [...new Set(regions.map(region => String(region).trim()).filter(Boolean))];
+                return this.persist();
+            },
+            getSettings() { return appStateCache.settings; },
+            async saveSettings(settings) {
+                appStateCache.settings = { ...settings };
+                return this.persist();
             },
             getTournamentById(id) {
-                const list = this.getTournaments();
-                return list.find(t => t.id === id);
+                return this.getTournaments().find(tournament => String(tournament.id) === String(id));
             },
-            saveTournament(tourneyData) {
-                const list = this.getTournaments();
-                const index = list.findIndex(t => t.id === tourneyData.id);
-                if (index >= 0) {
-                    list[index] = { ...list[index], ...tourneyData };
-                } else {
-                    list.push({
-                        ...tourneyData,
-                        candidates: tourneyData.candidates || []
-                    });
-                }
-                this.saveTournaments(list);
+            async saveTournament(tournamentData) {
+                const list = [...this.getTournaments()];
+                const index = list.findIndex(tournament => String(tournament.id) === String(tournamentData.id));
+                if (index >= 0) list[index] = { ...list[index], ...tournamentData };
+                else list.push({ ...tournamentData, candidates: tournamentData.candidates || [] });
+                return this.saveTournaments(list);
             },
-            deleteTournament(id) {
-                let list = this.getTournaments();
-                list = list.filter(t => t.id !== id);
-                this.saveTournaments(list);
+            async deleteTournament(id) {
+                return this.saveTournaments(this.getTournaments().filter(tournament => String(tournament.id) !== String(id)));
             },
-            saveCandidate(tournamentId, candidateData) {
-                const list = this.getTournaments();
-                const tourney = list.find(t => t.id === tournamentId);
-                if (!tourney) return false;
-
-                if (!tourney.candidates) tourney.candidates = [];
-
+            async saveCandidate(tournamentId, candidateData) {
+                const list = JSON.parse(JSON.stringify(this.getTournaments()));
+                const tournament = list.find(item => String(item.id) === String(tournamentId));
+                if (!tournament) return false;
+                tournament.candidates = tournament.candidates || [];
                 if (candidateData.id) {
-                    const cIdx = tourney.candidates.findIndex(c => c.id === candidateData.id);
-                    if (cIdx >= 0) {
-                        tourney.candidates[cIdx] = { ...tourney.candidates[cIdx], ...candidateData };
-                    } else {
-                        tourney.candidates.push(candidateData);
-                    }
+                    const index = tournament.candidates.findIndex(candidate => String(candidate.id) === String(candidateData.id));
+                    if (index >= 0) tournament.candidates[index] = { ...tournament.candidates[index], ...candidateData };
+                    else tournament.candidates.push(candidateData);
                 } else {
                     candidateData.id = Date.now();
                     candidateData.wins = candidateData.wins || 0;
                     candidateData.matches = candidateData.matches || 0;
-                    tourney.candidates.push(candidateData);
+                    tournament.candidates.push(candidateData);
                 }
-
-                this.saveTournaments(list);
-                return true;
+                return this.saveTournaments(list);
             },
-            deleteCandidate(tournamentId, candidateId) {
-                const list = this.getTournaments();
-                const tourney = list.find(t => t.id === tournamentId);
-                if (!tourney) return false;
-
-                tourney.candidates = (tourney.candidates || []).filter(c => c.id !== candidateId);
-                this.saveTournaments(list);
-                return true;
+            async deleteCandidate(tournamentId, candidateId) {
+                const list = JSON.parse(JSON.stringify(this.getTournaments()));
+                const tournament = list.find(item => String(item.id) === String(tournamentId));
+                if (!tournament) return false;
+                tournament.candidates = (tournament.candidates || []).filter(candidate => String(candidate.id) !== String(candidateId));
+                return this.saveTournaments(list);
             },
-            resetToDefault() {
-                localStorage.removeItem(CONFIG.STORAGE_KEYS.DATA);
-                localStorage.removeItem(CONFIG.STORAGE_KEYS.STATS);
-                localStorage.removeItem(CONFIG.STORAGE_KEYS.LOGS);
-                this.saveTournaments(DEFAULT_TOURNAMENTS);
+            async resetToDefault() {
+                appStateCache = { tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)), regions: [], settings: {} };
+                const saved = await this.persist();
+                return saved ? await StatsService.resetVotes() : false;
             }
         };
 
-        // ========================================================
-        // 4. STATS & LOGGING SERVICE (Audit & Analytics)
-        // ========================================================
         const StatsService = {
-            getStats() {
-                try {
-                    const data = localStorage.getItem(CONFIG.STORAGE_KEYS.STATS);
-                    if (data) return JSON.parse(data);
-                } catch (e) {}
-
-                const defaultStats = {
-                    totalVotes: 14280,
-                    todayVotes: 234,
-                    dailyTrend: [180, 210, 245, 190, 280, 310, 234]
-                };
-                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(defaultStats));
-                return defaultStats;
+            async refresh() {
+                const { data, error } = await supabaseClient.rpc('get_vote_dashboard', { p_device_id: getCurrentUserId() });
+                if (error) {
+                    console.error('Failed to load vote statistics', error);
+                    return false;
+                }
+                voteDashboard = { ...voteDashboard, ...data };
+                if (AuthService.isAdmin()) {
+                    const logs = await supabaseClient.from('activity_logs')
+                        .select('text,created_at').order('created_at', { ascending: false }).limit(50);
+                    if (!logs.error) voteDashboard.recentLogs = (logs.data || []).map(log => ({
+                        text: log.text,
+                        time: new Date(log.created_at).toLocaleTimeString('ko-KR', { hour12: false })
+                    }));
+                }
+                return true;
             },
-            recordMenuVote(tournamentId, candidateId, menuName) {
-                const tournaments = DataService.getTournaments();
-                const tournament = tournaments.find(item => item.id === tournamentId);
-                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
-                if (!candidate || !menuName) return false;
-                const menuVoteKey = getMenuVoteKey(tournamentId, candidateId);
-                const myMenuVotes = getMyMenuVotes(tournamentId, candidateId);
-                if (myMenuVotes.includes(menuName)) return false;
-                candidate.menuVotes = candidate.menuVotes || {};
-                candidate.menuVotes[menuName] = (Number(candidate.menuVotes[menuName]) || 0) + 1;
-                myMenuVotes.push(menuName);
-                localStorage.setItem(menuVoteKey, JSON.stringify(myMenuVotes));
-                const stats = this.getStats();
-                stats.totalVotes = (stats.totalVotes || 0) + 1;
-                stats.todayVotes = (stats.todayVotes || 0) + 1;
-                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
-                DataService.saveTournaments(tournaments);
-                this.addLog(`[메뉴 추가 투표] ${getTournamentRegion(tournament)} · ${candidate.name} · ${menuName} 1표`);
+            getStats() {
+                const baseline = DataService.getSettings().statsBaseline || {};
+                const sameDay = baseline.importedOn === new Date().toISOString().slice(0, 10);
+                const remoteStats = voteDashboard.stats;
+                const remoteTrend = remoteStats.dailyTrend || [];
+                const baselineTrend = sameDay && Array.isArray(baseline.dailyTrend) ? baseline.dailyTrend : [];
+                return {
+                    totalVotes: Number(baseline.totalVotes || 0) + Number(remoteStats.totalVotes || 0),
+                    todayVotes: (sameDay ? Number(baseline.todayVotes || 0) : 0) + Number(remoteStats.todayVotes || 0),
+                    dailyTrend: remoteTrend.map((count, index) => Number(count || 0) + Number(baselineTrend[index] || 0))
+                };
+            },
+            getLogs() { return voteDashboard.recentLogs || []; },
+            getMyDirectVote(tournamentId) { return voteDashboard.myDirect?.[String(tournamentId)] || null; },
+            getMyMenuVotes(tournamentId, candidateId) {
+                return voteDashboard.myMenus?.[`${tournamentId}|${candidateId}`] || [];
+            },
+            getCandidateVoteCount(tournamentId, candidateId) {
+                return Number(voteDashboard.candidateCounts?.[`${tournamentId}|${candidateId}`] || 0);
+            },
+            getMenuVoteCount(tournamentId, candidateId, menuName) {
+                return Number(voteDashboard.menuCounts?.[`${tournamentId}|${candidateId}|${menuName}`] || 0);
+            },
+            async callVoteRpc(name, args) {
+                const userId = getCurrentUserId();
+                if (!userId) {
+                    requireLoginForVote(() => {});
+                    return false;
+                }
+                const { data, error } = await supabaseClient.rpc(name, { p_device_id: userId, ...args });
+                if (error) {
+                    console.error(`Vote request ${name} failed`, error);
+                    showToast(`투표 처리에 실패했습니다: ${error.message}`);
+                    return false;
+                }
+                if (!data) {
+                    await this.refresh();
+                    showToast(name.startsWith('cast_') ? '오늘 이 항목에는 이미 투표했습니다.' : '취소할 투표를 찾지 못했습니다.');
+                    return false;
+                }
+                await this.refresh();
                 return true;
             },
             recordDirectVote(tournamentId, candidateId) {
-                const stats = this.getStats();
-                stats.totalVotes = (stats.totalVotes || 0) + 1;
-                stats.todayVotes = (stats.todayVotes || 0) + 1;
-                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
-                const tournaments = DataService.getTournaments();
-                const tournament = tournaments.find(item => item.id === tournamentId);
-                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
-                if (!candidate) return;
-                candidate.votes = getCandidateVotes(candidate) + 1;
-                DataService.saveTournaments(tournaments);
-                this.addLog(`[지역 투표] ${getTournamentRegion(tournament)} · ${candidate.name}에 1표`);
+                return this.callVoteRpc('cast_restaurant_vote', { p_tournament_id: String(tournamentId), p_candidate_id: String(candidateId) });
+            },
+            recordMenuVote(tournamentId, candidateId, menuName) {
+                return this.callVoteRpc('cast_menu_vote', { p_tournament_id: String(tournamentId), p_candidate_id: String(candidateId), p_menu_name: menuName });
             },
             cancelMenuVote(tournamentId, candidateId, menuName) {
-                const myMenuVotes = getMyMenuVotes(tournamentId, candidateId);
-                if (!myMenuVotes.includes(menuName)) return false;
-                const tournaments = DataService.getTournaments();
-                const tournament = tournaments.find(item => item.id === tournamentId);
-                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
-                if (!candidate) return false;
-                candidate.menuVotes = candidate.menuVotes || {};
-                const count = Number(candidate.menuVotes[menuName]) || 0;
-                if (count <= 0) return false;
-                if (count === 1) delete candidate.menuVotes[menuName];
-                else candidate.menuVotes[menuName] = count - 1;
-                const remainingVotes = myMenuVotes.filter(menu => menu !== menuName);
-                const key = getMenuVoteKey(tournamentId, candidateId);
-                if (remainingVotes.length) localStorage.setItem(key, JSON.stringify(remainingVotes));
-                else localStorage.removeItem(key);
-                const stats = this.getStats();
-                stats.totalVotes = Math.max(0, (stats.totalVotes || 0) - 1);
-                stats.todayVotes = Math.max(0, (stats.todayVotes || 0) - 1);
-                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
-                DataService.saveTournaments(tournaments);
-                this.addLog(`[메뉴 투표 취소] ${getTournamentRegion(tournament)} · ${candidate.name} · ${menuName}`);
-                return true;
+                return this.callVoteRpc('cancel_menu_vote', { p_tournament_id: String(tournamentId), p_candidate_id: String(candidateId), p_menu_name: menuName });
             },
             cancelDirectVote(tournamentId, candidateId) {
-                if (localStorage.getItem(getPollVoteKey(tournamentId)) !== String(candidateId)) return false;
-                const tournaments = DataService.getTournaments();
-                const tournament = tournaments.find(item => item.id === tournamentId);
-                const candidate = tournament && (tournament.candidates || []).find(item => String(item.id) === String(candidateId));
-                if (!candidate) return false;
-                candidate.votes = Math.max(0, getCandidateVotes(candidate) - 1);
-                localStorage.removeItem(getPollVoteKey(tournamentId));
-                const stats = this.getStats();
-                stats.totalVotes = Math.max(0, (stats.totalVotes || 0) - 1);
-                stats.todayVotes = Math.max(0, (stats.todayVotes || 0) - 1);
-                localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(stats));
-                DataService.saveTournaments(tournaments);
-                this.addLog(`[식당 픽 취소] ${getTournamentRegion(tournament)} · ${candidate.name}`);
+                return this.callVoteRpc('cancel_restaurant_vote', { p_tournament_id: String(tournamentId), p_candidate_id: String(candidateId) });
+            },
+            async addLog(text) {
+                if (!AuthService.isAdmin()) return false;
+                const { error } = await supabaseClient.from('activity_logs').insert({ text });
+                if (error) { console.error('Failed to write activity log', error); return false; }
+                await this.refresh();
                 return true;
             },
-            getLogs() {
-                try {
-                    const logs = localStorage.getItem(CONFIG.STORAGE_KEYS.LOGS);
-                    if (logs) return JSON.parse(logs);
-                } catch (e) {}
-
-                const initialLogs = [
-                    { time: '방금 전', text: '[지역 투표] 성수 · 소문난성수감자탕에 1표' },
-                    { time: '2분 전', text: '[지역 투표] 성수 · 성수육칼에 1표' },
-                    { time: '5분 전', text: '[지역 투표] 성수 · 어니언 성수에 1표' },
-                    { time: '8분 전', text: '[지역 투표] 성수 · 팩피에 1표' },
-                    { time: '12분 전', text: '[보안] 동일 IP 20회 반복 투표 감지 및 자동 차단 완료' }
-                ];
-                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify(initialLogs));
-                return initialLogs;
+            async clearLogs() {
+                const { error } = await supabaseClient.from('activity_logs').delete().gte('id', 0);
+                if (error) { showToast(`로그 삭제 실패: ${error.message}`); return false; }
+                await this.refresh();
+                return true;
             },
-            addLog(text) {
-                const logs = this.getLogs();
-                const now = new Date();
-                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-                logs.unshift({ time: timeStr, text: text });
-                if (logs.length > 50) logs.pop();
-                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify(logs));
-            },
-            clearLogs() {
-                localStorage.setItem(CONFIG.STORAGE_KEYS.LOGS, JSON.stringify([]));
+            async resetVotes() {
+                const { error } = await supabaseClient.rpc('admin_reset_vote_data');
+                if (error) { showToast(`투표 초기화 실패: ${error.message}`); return false; }
+                await this.refresh();
+                return true;
             }
         };
-
-        // ========================================================
         // 5. USER POLL STATE & LOGIC
         // ========================================================
         let currentTournament = null;
@@ -1461,11 +1315,29 @@
         let trendChartInstance = null;
 
         // --- WINDOW ONLOAD ---
-        window.onload = function() {
+        window.onload = async function() {
             AuthService.updateAuthUI();
+            await DataService.initialize();
+            await StatsService.refresh();
             renderHomeCategories();
             renderTierlist();
         };
+
+        async function refreshSharedData() {
+            if (!supabaseClient || document.hidden) return;
+            await DataService.initialize(true);
+            await StatsService.refresh();
+            if (currentTournament) currentTournament = DataService.getTournamentById(currentTournament.id);
+            const activeView = document.querySelector('main section:not(.hidden)')?.id;
+            if (activeView === 'view-game') renderPoll();
+            else if (activeView === 'view-admin' && AuthService.isAdmin()) refreshAdminData();
+            else if (activeView === 'view-tierlist') renderTierlist();
+            else renderHomeCategories();
+        }
+
+        window.addEventListener('focus', refreshSharedData);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSharedData(); });
+        setInterval(refreshSharedData, 30000);
 
         function handleLogoClick() {
             if (AuthService.isAdmin()) {
@@ -1477,6 +1349,11 @@
 
         // --- USER VIEW SWITCHER ---
         function showView(viewName) {
+            if (viewName === 'admin' && !AuthService.isAdmin()) {
+                showToast('관리자 로그인이 필요합니다.');
+                openLoginModal();
+                return;
+            }
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.add('hidden');
@@ -1504,6 +1381,7 @@
                 btnAdminToggle.className = viewName === 'admin'
                     ? 'px-3 py-1.5 text-xs sm:text-sm font-bold bg-indigo-600 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-md'
                     : 'px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm';
+                btnAdminToggle.classList.toggle('hidden', !AuthService.isAdmin());
             }
 
             if (viewName === 'tierlist') {
@@ -1529,6 +1407,11 @@
         }
 
         function switchToAdminView(targetTab = 'stats') {
+            if (!AuthService.isAdmin()) {
+                showToast('관리자 로그인이 필요합니다.');
+                openLoginModal();
+                return;
+            }
             showView('admin');
             switchAdminTab(targetTab);
             refreshAdminData();
@@ -1537,16 +1420,15 @@
         function getTournamentRegion(t) { return (t && t.region ? String(t.region).trim() : "성수") || "성수"; }
 
         function getAvailableRegions() {
-            let saved = [];
-            try { saved = JSON.parse(localStorage.getItem(REGION_STORAGE_KEY) || "[]"); } catch (e) {}
-            return [...new Set([...saved, ...DataService.getTournaments().map(getTournamentRegion)].map(r => String(r).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+            return [...new Set([...DataService.getRegions(), ...DataService.getTournaments().map(getTournamentRegion)].map(r => String(r).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
         }
 
-        function saveRegion(region) {
+        async function saveRegion(region) {
             const regions = getAvailableRegions();
             if (!regions.includes(region)) regions.push(region);
-            localStorage.setItem(REGION_STORAGE_KEY, JSON.stringify(regions));
+            const saved = await DataService.saveRegions(regions);
             renderRegionOptions();
+            return saved;
         }
 
         function renderRegionOptions(selectedRegion = currentRegion) {
@@ -1558,12 +1440,12 @@
             select.value = selectedRegion || regions[0] || '';
         }
 
-        function addAdminRegion() {
+        async function addAdminRegion() {
             const input = document.getElementById('admin-new-region');
             const region = input.value.trim();
             if (!region) { showToast('추가할 지역명을 입력해 주세요.'); return; }
             if (getAvailableRegions().includes(region)) { showToast('이미 등록된 지역입니다.'); return; }
-            saveRegion(region);
+            if (!await saveRegion(region)) return;
             currentRegion = region;
             localStorage.setItem('FOOD_CURRENT_REGION', region);
             input.value = '';
@@ -1623,7 +1505,7 @@
                 container.innerHTML = `
                     <div class="col-span-3 text-center py-12 bg-brand-card border border-brand-border rounded-2xl">
                         <p class="text-gray-400 text-sm">${currentRegion}에서 진행 중인 투표가 없습니다. 다른 지역을 선택해 보세요.</p>
-                        <button onclick="switchToAdminView('tournaments')" class="mt-3 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">관리자 화면에서 새 투표 열기</button>
+                        <button id="admin-empty-state-cta" onclick="switchToAdminView('tournaments')" class="hidden mt-3 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">관리자 화면에서 새 투표 열기</button>
                     </div>`;
                 return;
             }
@@ -1665,7 +1547,8 @@
         }
 
         function getCandidateVotes(candidate) {
-            return Math.max(0, Number(candidate.votes ?? candidate.wins ?? 0));
+            const tournamentId = candidateTournamentIds.get(candidate);
+            return Math.max(0, Number(candidate.votes ?? candidate.wins ?? 0) + StatsService.getCandidateVoteCount(tournamentId, candidate.id));
         }
 
         function getMenuChoices(candidate) {
@@ -1681,18 +1564,22 @@
         }
 
         function getMyMenuVotes(tournamentId, candidateId) {
-            try {
-                const saved = JSON.parse(localStorage.getItem(getMenuVoteKey(tournamentId, candidateId)) || '[]');
-                return Array.isArray(saved) ? saved : [];
-            }
-            catch (e) { return []; }
+            return StatsService.getMyMenuVotes(tournamentId, candidateId);
+        }
+
+        function requireLoginForVote(resumeAction) {
+            if (supabaseSessionUserId && AuthService.getUser()?.id === supabaseSessionUserId) return true;
+            pendingVoteAction = resumeAction;
+            showToast('투표하려면 먼저 로그인해 주세요.');
+            openLoginModal();
+            return false;
         }
 
         function renderPoll() {
             if (!currentTournament) return;
             const candidates = currentTournament.candidates || [];
             const totalVotes = candidates.reduce((sum, candidate) => sum + getCandidateVotes(candidate), 0);
-            const myVote = localStorage.getItem(getPollVoteKey(currentTournament.id));
+            const myVote = StatsService.getMyDirectVote(currentTournament.id);
             document.getElementById('game-title').innerText = getTournamentDisplayTitle(currentTournament);
             document.getElementById('poll-region-label').innerText = `📍 ${getTournamentRegion(currentTournament)} · 식당 픽`;
             document.getElementById('poll-vote-count').innerText = `현재 ${totalVotes.toLocaleString()}표`;
@@ -1708,7 +1595,7 @@
                     <section class="pt-3 border-t border-brand-border space-y-2">
                         <div><h4 class="text-sm font-bold text-white">이 식당에서 가장 맛있었던 메뉴는?</h4><p class="text-[11px] text-gray-400">선택 참여 · 여러 메뉴를 고를 수 있고, 메뉴마다 한 표만 가능해요</p></div>
                         <div class="flex flex-wrap gap-2">${getMenuChoices(candidate).map(menu => {
-                            const menuVotes = Number((candidate.menuVotes || {})[menu]) || 0;
+                            const menuVotes = (Number((candidate.menuVotes || {})[menu]) || 0) + StatsService.getMenuVoteCount(currentTournament.id, candidate.id, menu);
                             const alreadyVoted = getMyMenuVotes(currentTournament.id, candidate.id).includes(menu);
                             const candidateArg = encodeURIComponent(String(candidate.id)).replace(/'/g, '%27');
                             const menuArg = encodeURIComponent(menu).replace(/'/g, '%27');
@@ -1729,53 +1616,45 @@
             });
         }
 
-        function castPollVote(candidateId) {
+        async function castPollVote(candidateId) {
+            if (!requireLoginForVote(() => castPollVote(candidateId))) return;
             if (!currentTournament) return;
-            const voteKey = getPollVoteKey(currentTournament.id);
-            if (localStorage.getItem(voteKey)) {
-                showToast('이 투표에는 이미 참여했어요.');
-                return;
-            }
+            if (StatsService.getMyDirectVote(currentTournament.id)) { showToast('이미 투표에 참여했어요.'); return; }
             const candidate = currentTournament.candidates.find(item => String(item.id) === String(candidateId));
             if (!candidate) return;
-            StatsService.recordDirectVote(currentTournament.id, candidate.id);
-            localStorage.setItem(voteKey, String(candidate.id));
-            currentTournament = DataService.getTournamentById(currentTournament.id);
+            if (!await StatsService.recordDirectVote(currentTournament.id, candidate.id)) return;
             renderPoll();
             renderTierlist();
-            showToast(`'${candidate.name}' 식당 픽 완료!`);
+            showToast(`'${candidate.name}' 식당 투표 완료!`);
         }
 
-        function castMenuVote(candidateId, menuName) {
-            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
+        async function castMenuVote(candidateId, menuName) {
+            if (!requireLoginForVote(() => castMenuVote(candidateId, menuName))) return;
+            if (!currentTournament || String(StatsService.getMyDirectVote(currentTournament.id)) !== String(candidateId)) return;
             const candidate = currentTournament.candidates.find(item => String(item.id) === String(candidateId));
             if (!candidate || !getMenuChoices(candidate).includes(menuName)) return;
-            const myMenuVotes = getMyMenuVotes(currentTournament.id, candidate.id);
-            if (myMenuVotes.includes(menuName)) { showToast('이 메뉴에는 이미 투표했어요.'); return; }
-            if (!StatsService.recordMenuVote(currentTournament.id, candidate.id, menuName)) return;
-            currentTournament = DataService.getTournamentById(currentTournament.id);
+            if (getMyMenuVotes(currentTournament.id, candidate.id).includes(menuName)) { showToast('이미 선택한 메뉴입니다.'); return; }
+            if (!await StatsService.recordMenuVote(currentTournament.id, candidate.id, menuName)) return;
             renderPoll();
-            showToast(`'${menuName}' 메뉴에 추가 투표했어요!`);
+            showToast(`'${menuName}' 메뉴에 추가 투표했어요.`);
         }
 
-        function cancelMenuVote(candidateId, menuName) {
-            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
-            if (!StatsService.cancelMenuVote(currentTournament.id, candidateId, menuName)) return;
-            currentTournament = DataService.getTournamentById(currentTournament.id);
+        async function cancelMenuVote(candidateId, menuName) {
+            if (!requireLoginForVote(() => cancelMenuVote(candidateId, menuName))) return;
+            if (!currentTournament || String(StatsService.getMyDirectVote(currentTournament.id)) !== String(candidateId)) return;
+            if (!await StatsService.cancelMenuVote(currentTournament.id, candidateId, menuName)) return;
             renderPoll();
-            showToast('메뉴 픽을 취소했어요.');
+            showToast('메뉴 선택을 취소했어요.');
         }
 
-        function cancelRestaurantVote(candidateId) {
-            if (!currentTournament || localStorage.getItem(getPollVoteKey(currentTournament.id)) !== String(candidateId)) return;
-            getMyMenuVotes(currentTournament.id, candidateId).forEach(menu => StatsService.cancelMenuVote(currentTournament.id, candidateId, menu));
-            if (!StatsService.cancelDirectVote(currentTournament.id, candidateId)) return;
-            currentTournament = DataService.getTournamentById(currentTournament.id);
+        async function cancelRestaurantVote(candidateId) {
+            if (!requireLoginForVote(() => cancelRestaurantVote(candidateId))) return;
+            if (!currentTournament || String(StatsService.getMyDirectVote(currentTournament.id)) !== String(candidateId)) return;
+            if (!await StatsService.cancelDirectVote(currentTournament.id, candidateId)) return;
             renderPoll();
             renderTierlist();
-            showToast('식당 픽을 취소했어요.');
+            showToast('식당 투표를 취소했어요.');
         }
-
         function confirmExitGame() {
             showView('home');
         }
@@ -1991,6 +1870,9 @@
             } else if (tabName === 'candidates') {
                 populateAdminCandidateTournamentsSelect();
                 renderAdminCandidatesList();
+            } else if (tabName === 'system') {
+                const settings = DataService.getSettings();
+                if (settings.voteLimit) document.getElementById('setting-vote-limit').value = settings.voteLimit;
             }
         }
 
@@ -2150,27 +2032,19 @@
             });
         }
 
-        function injectSampleVotes() {
-            const polls = DataService.getTournaments().filter(t => t.candidates && t.candidates.length);
-            if (!polls.length) return;
-            for (let i = 0; i < 50; i++) {
-                const poll = polls[Math.floor(Math.random() * polls.length)];
-                const candidate = poll.candidates[Math.floor(Math.random() * poll.candidates.length)];
-                StatsService.recordDirectVote(poll.id, candidate.id);
-            }
-            StatsService.addLog('⚡ [모의 테스트] 가상 직접 투표 50건 반영 완료');
-            showToast('⚡ 가상 투표 50건이 반영되었습니다!');
+        async function refreshAdminStats() {
+            await StatsService.refresh();
             renderAdminStats();
+            showToast('통계를 새로 불러왔습니다.');
         }
 
-        function clearVoteLogs() {
-            if (confirm('모든 감사 로그를 지우시겠습니까?')) {
-                StatsService.clearLogs();
+        async function clearVoteLogs() {
+            if (confirm('모든 감사 로그를 지울까요?')) {
+                if (!await StatsService.clearLogs()) return;
                 renderAdminStats();
-                showToast('로그가 비워졌습니다.');
+                showToast('로그를 삭제했습니다.');
             }
         }
-
         // --- ADMIN TAB 2: TOURNAMENTS LIST & CRUD ---
         let selectedAdminRegion = 'all';
 
@@ -2183,16 +2057,12 @@
             }).join('');
         }
 
-        function deleteAdminRegion(region) {
+        async function deleteAdminRegion(region) {
             const linkedPolls = DataService.getTournaments().filter(t => getTournamentRegion(t) === region);
-            if (linkedPolls.length) {
-                showToast('이 지역의 투표를 먼저 다른 지역으로 옮기거나 삭제해 주세요.');
-                return;
-            }
-            if (!window.confirm(`지역 '${region}'을(를) 삭제할까요?\n\n이 작업은 되돌릴 수 없습니다. 삭제 후 이 지역은 지역 선택과 관리자 관리 목록에서 사라집니다.`)) return;
-            let regions = [];
-            try { regions = JSON.parse(localStorage.getItem(REGION_STORAGE_KEY) || '[]'); } catch (e) {}
-            localStorage.setItem(REGION_STORAGE_KEY, JSON.stringify(regions.filter(item => String(item).trim() !== region)));
+            if (linkedPolls.length) { showToast('먼저 해당 지역의 투표를 다른 지역으로 옮기거나 삭제해 주세요.'); return; }
+            if (!window.confirm(`지역 '${region}'를 삭제할까요?`)) return;
+            const saved = await DataService.saveRegions(DataService.getRegions().filter(item => String(item).trim() !== region));
+            if (!saved) return;
             if (currentRegion === region) {
                 currentRegion = getAvailableRegions()[0] || '성수';
                 localStorage.setItem('FOOD_CURRENT_REGION', currentRegion);
@@ -2201,9 +2071,8 @@
             renderHomeCategories();
             renderTierlist();
             renderAdminTournamentsList();
-            showToast('지역을 삭제했어요.');
+            showToast('지역을 삭제했습니다.');
         }
-
         function renderAdminTournamentsList() {
             const container = document.getElementById('admin-tournaments-list-container');
             const all = DataService.getTournaments();
@@ -2294,7 +2163,7 @@
             document.getElementById('modal-tournament').classList.add('hidden');
         }
 
-        function handleSaveTournament(e) {
+        async function handleSaveTournament(e) {
             e.preventDefault();
             const originalId = document.getElementById('input-tournament-id').value;
             const key = document.getElementById('input-tournament-key').value.trim();
@@ -2320,13 +2189,13 @@
                 candidates: existing ? existing.candidates : []
             };
 
-            saveRegion(region);
-            DataService.saveTournament(tourneyObj);
+            if (!await saveRegion(region)) return;
+            if (!await DataService.saveTournament(tourneyObj)) return;
             if (existing && existing.active !== false) {
                 currentRegion = region;
                 localStorage.setItem("FOOD_CURRENT_REGION", region);
             }
-            StatsService.addLog(`[투표 관리] '${baseTitle}' 투표가 저장되었습니다.`);
+            await StatsService.addLog(`[투표 관리] '${baseTitle}' 투표가 저장되었습니다.`);
 
             closeTournamentModal();
             renderHomeCategories();
@@ -2337,11 +2206,11 @@
             showToast('✅ 투표가 성공적으로 저장되었습니다!');
         }
 
-        function toggleTournamentActive(id) {
+        async function toggleTournamentActive(id) {
             const t = DataService.getTournamentById(id);
             if (!t) return;
             t.active = t.active === false ? true : false;
-            DataService.saveTournament(t);
+            if (!await DataService.saveTournament(t)) return;
             if (t.active) {
                 currentRegion = getTournamentRegion(t);
                 localStorage.setItem('FOOD_CURRENT_REGION', currentRegion);
@@ -2352,10 +2221,10 @@
             showToast(`투표 상태가 '${t.active ? '공개' : '비공개'}'로 변경되었습니다.`);
         }
 
-        function deleteTournament(id) {
+        async function deleteTournament(id) {
             if (confirm(`정말로 '${id}' 투표를 삭제하시겠습니까? 등록된 모든 후보 맛집도 함께 삭제됩니다.`)) {
-                DataService.deleteTournament(id);
-                StatsService.addLog(`[투표 삭제] '${id}' 투표가 삭제되었습니다.`);
+                if (!await DataService.deleteTournament(id)) return;
+                await StatsService.addLog(`[투표 삭제] '${id}' 투표가 삭제되었습니다.`);
                 renderAdminTournamentsList();
                 renderAdminStats();
                 populateAdminCandidateTournamentsSelect();
@@ -2536,7 +2405,7 @@
             previewCandidateImage(url);
         }
 
-        function handleSaveCandidate(e) {
+        async function handleSaveCandidate(e) {
             e.preventDefault();
             const idVal = document.getElementById('input-candidate-id').value;
             const tourneyId = document.getElementById('input-candidate-tournament').value;
@@ -2555,11 +2424,11 @@
                 img: img
             };
 
-            DataService.saveCandidate(tourneyId, candidateData);
+            if (!await DataService.saveCandidate(tourneyId, candidateData)) return;
             
             const updatedTourney = DataService.getTournamentById(tourneyId);
             const candCount = (updatedTourney.candidates || []).length;
-            StatsService.addLog(`[맛집 편집] '${name}' 정보 저장 (소속: ${getTournamentDisplayTitle(updatedTourney)}, 현재 ${candCount}개)`);
+            await StatsService.addLog(`[맛집 편집] '${name}' 정보 저장 (소속: ${getTournamentDisplayTitle(updatedTourney)}, 현재 ${candCount}개)`);
 
             closeCandidateModal();
             renderAdminCandidatesList();
@@ -2568,12 +2437,12 @@
             showToast(`✅ 맛집 '${name}' 저장 완료! (현재 ${candCount}개)`);
         }
 
-        function deleteCandidate(tourneyId, candidateId) {
+        async function deleteCandidate(tourneyId, candidateId) {
             if (confirm('해당 맛집을 투표 후보에서 삭제하시겠습니까?')) {
-                DataService.deleteCandidate(tourneyId, candidateId);
+                if (!await DataService.deleteCandidate(tourneyId, candidateId)) return;
                 const updatedTourney = DataService.getTournamentById(tourneyId);
                 const candCount = (updatedTourney.candidates || []).length;
-                StatsService.addLog(`[맛집 삭제] ID ${candidateId} 맛집 삭제 (현재 ${candCount}개)`);
+                await StatsService.addLog(`[맛집 삭제] ID ${candidateId} 맛집 삭제 (현재 ${candCount}개)`);
                 renderAdminCandidatesList();
                 renderAdminTournamentsList();
                 renderAdminStats();
@@ -2581,15 +2450,13 @@
             }
         }
 
-        // --- ADMIN TAB 4: SYSTEM & BACKEND INTEGRATION ---
-        function saveSystemSettings() {
-            const apiUrl = document.getElementById('setting-api-url').value;
-            const authMode = document.getElementById('setting-auth-mode').value;
+        // --- ADMIN TAB 4: SYSTEM SETTINGS ---
+        async function saveSystemSettings() {
             const voteLimit = document.getElementById('setting-vote-limit').value;
 
-            const settings = { apiUrl, authMode, voteLimit };
-            localStorage.setItem(CONFIG.STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-            StatsService.addLog(`[시스템 설정] 백엔드 및 투표 정책 설정이 업데이트되었습니다.`);
+            const settings = { ...DataService.getSettings(), voteLimit };
+            if (!await DataService.saveSettings(settings)) return;
+            await StatsService.addLog(`[시스템 설정] 투표 정책이 업데이트되었습니다.`);
             showToast('✅ 시스템 설정이 저장되었습니다!');
         }
 
@@ -2614,14 +2481,15 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
                     if (parsed.tournaments && Array.isArray(parsed.tournaments)) {
-                        DataService.saveTournaments(parsed.tournaments);
-                        if (parsed.stats) {
-                            localStorage.setItem(CONFIG.STORAGE_KEYS.STATS, JSON.stringify(parsed.stats));
-                        }
+                        if (!await DataService.saveTournaments(parsed.tournaments)) return;
+                        if (Array.isArray(parsed.regions) && !await DataService.saveRegions(parsed.regions)) return;
+                        const importedSettings = { ...(parsed.settings || DataService.getSettings()) };
+                        if (parsed.stats) importedSettings.statsBaseline = { ...parsed.stats, importedOn: new Date().toISOString().slice(0, 10) };
+                        if (!await DataService.saveSettings(importedSettings)) return;
                         refreshAdminData();
                         showToast('✅ JSON 데이터 복원이 완료되었습니다!');
                     } else {
@@ -2634,9 +2502,9 @@
             reader.readAsText(file);
         }
 
-        function confirmResetToDefault() {
+        async function confirmResetToDefault() {
             if (confirm('모든 변경사항과 통계를 초기 상태로 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                DataService.resetToDefault();
+                if (!await DataService.resetToDefault()) return;
                 refreshAdminData();
                 showToast('🔄 모든 데이터가 초기 상태로 복구되었습니다.');
             }
@@ -2647,59 +2515,123 @@
         // ========================================================
         function openLoginModal() {
             document.getElementById('modal-login').classList.remove('hidden');
+            clearAuthFormMessage();
         }
 
+        let supabaseAuthMode = 'login';
+        let pendingVoteAction = null;
+
+        function toggleSupabaseAuthMode() {
+            supabaseAuthMode = supabaseAuthMode === 'login' ? 'signup' : 'login';
+            document.getElementById('auth-submit-button').textContent = supabaseAuthMode === 'signup' ? '회원가입' : '로그인';
+            document.getElementById('auth-mode-toggle').textContent = supabaseAuthMode === 'signup' ? '이미 계정이 있나요? 로그인' : '처음이신가요? 회원가입';
+            document.getElementById('auth-password').autocomplete = supabaseAuthMode === 'signup' ? 'new-password' : 'current-password';
+            clearAuthFormMessage();
+        }
+
+        function clearAuthFormMessage() {
+            const message = document.getElementById('auth-form-message');
+            if (message) { message.textContent = ''; message.classList.add('hidden'); }
+        }
+
+        function showAuthFormMessage(message, isError = false) {
+            const element = document.getElementById('auth-form-message');
+            element.textContent = message;
+            element.className = `text-xs text-center leading-relaxed ${isError ? 'text-red-300' : 'text-emerald-300'}`;
+        }
+
+        async function submitSupabaseAuth(event) {
+            event.preventDefault();
+            if (!supabaseClient) {
+                showAuthFormMessage('Supabase 공개 anon/publishable 키가 설정되지 않았습니다. CONFIG.SUPABASE_ANON_KEY에 키를 입력해 주세요.', true);
+                return;
+            }
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const submitButton = document.getElementById('auth-submit-button');
+            submitButton.disabled = true;
+            submitButton.textContent = '처리 중…';
+            try {
+                const result = supabaseAuthMode === 'signup'
+                    ? await supabaseClient.auth.signUp({ email, password })
+                    : await supabaseClient.auth.signInWithPassword({ email, password });
+                if (result.error) throw result.error;
+                if (supabaseAuthMode === 'signup' && !result.data.session) {
+                    showAuthFormMessage('가입 확인 메일을 보냈습니다. 메일의 인증 링크를 누른 뒤 로그인해 주세요.');
+                    return;
+                }
+                const authUser = result.data.user || result.data.session?.user;
+                if (!authUser) throw new Error('로그인 사용자 정보를 확인하지 못했습니다.');
+                const roleResult = await applySupabaseUser(authUser);
+                if (roleResult.error) throw new Error('관리자 권한 테이블을 확인할 수 없습니다. Supabase SQL 설정을 확인해 주세요.');
+                closeLoginModal();
+                const resumeAction = pendingVoteAction;
+                pendingVoteAction = null;
+                if (resumeAction) {
+                    showToast('로그인되었습니다. 투표를 이어갑니다.');
+                    await resumeAction();
+                } else if (roleResult.role === 'admin') {
+                    showToast('관리자로 로그인되었습니다.');
+                    switchToAdminView('stats');
+                } else {
+                    showToast(supabaseAuthMode === 'signup' ? '회원가입 및 로그인이 완료되었습니다.' : '로그인되었습니다.');
+                    switchToUserView();
+                }
+            } catch (error) {
+                showAuthFormMessage(error.message || '인증에 실패했습니다. 입력 내용을 확인해 주세요.', true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = supabaseAuthMode === 'signup' ? '회원가입' : '로그인';
+            }
+        }
+
+        async function applySupabaseUser(authUser) {
+            if (!authUser) {
+                supabaseAdminVerified = false;
+                supabaseSessionUserId = null;
+                AuthService.setUser(null);
+                return { role: 'user', error: null };
+            }
+            supabaseSessionUserId = authUser.id;
+            const { data, error } = await supabaseClient
+                .from('user_roles')
+                .select('user_id')
+                .eq('user_id', authUser.id)
+                .maybeSingle();
+            const role = !error && data ? 'admin' : 'user';
+            supabaseAdminVerified = role === 'admin';
+            AuthService.setUser({ role, username: authUser.email || '회원', email: authUser.email, id: authUser.id });
+            if (role === 'admin') {
+                await DataService.initialize();
+                await StatsService.refresh();
+                renderHomeCategories();
+                renderTierlist();
+            }
+            return { role, error };
+        }
+
+        if (supabaseClient) {
+            supabaseClient.auth.getSession().then(async ({ data, error }) => {
+                if (error || !data.session?.user) {
+                    await applySupabaseUser(null);
+                    return;
+                }
+                const result = await applySupabaseUser(data.session.user);
+                if (result.role === 'admin') switchToAdminView('stats');
+            });
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                setTimeout(async () => {
+                    if (event === 'SIGNED_OUT' || !session?.user) {
+                        await applySupabaseUser(null);
+                    } else {
+                        const result = await applySupabaseUser(session.user);
+                        if (result.role === 'admin') switchToAdminView('stats');
+                    }
+                }, 0);
+            });
+        }
         function closeLoginModal() {
             document.getElementById('modal-login').classList.add('hidden');
-        }
-
-        function switchLoginTab(tab) {
-            const userBtn = document.getElementById('login-tab-user-btn');
-            const adminBtn = document.getElementById('login-tab-admin-btn');
-            const userForm = document.getElementById('login-form-user');
-            const adminForm = document.getElementById('login-form-admin');
-
-            if (tab === 'user') {
-                userBtn.className = 'flex-1 py-2 rounded-lg bg-brand-orange text-white transition-all';
-                adminBtn.className = 'flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all';
-                userForm.classList.remove('hidden');
-                adminForm.classList.add('hidden');
-            } else {
-                userBtn.className = 'flex-1 py-2 rounded-lg text-gray-400 hover:text-white transition-all';
-                adminBtn.className = 'flex-1 py-2 rounded-lg bg-indigo-600 text-white transition-all';
-                userForm.classList.add('hidden');
-                adminForm.classList.remove('hidden');
-            }
-        }
-
-        function simulatedLogin(provider) {
-            closeLoginModal();
-            const providerName = provider === 'kakao' ? '카카오' : '네이버';
-            AuthService.login('user', `${providerName} 유저`);
-            showToast(`✅ ${providerName} 로그인 성공! 오늘의 투표권이 활성화되었습니다.`);
-            switchToUserView();
-        }
-
-        function submitAdminLogin() {
-            const id = document.getElementById('admin-login-id').value.trim();
-            const pw = document.getElementById('admin-login-pw').value.trim();
-
-            if (id === 'admin' && pw === '1234') {
-                closeLoginModal();
-                AuthService.login('admin', '슈퍼 관리자 (admin)');
-                showToast('🛡️ 관리자로 로그인되었습니다. 제어 콘솔로 이동합니다.');
-                switchToAdminView('stats');
-            } else {
-                showToast('❌ 아이디 또는 비밀번호가 올바르지 않습니다 (체험: admin / 1234)');
-            }
-        }
-
-        function openBackendGuideModal() {
-            document.getElementById('modal-backend-guide').classList.remove('hidden');
-        }
-
-        function closeBackendGuideModal() {
-            document.getElementById('modal-backend-guide').classList.add('hidden');
         }
 
         // --- INSTAGRAM SHARE MODAL ---
