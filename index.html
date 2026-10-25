@@ -78,6 +78,32 @@
         }
         .live-dot { animation: live-pulse 1.4s ease-out infinite; }
         @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
+        @media (max-width: 640px) {
+            html { -webkit-text-size-adjust: 100%; }
+            body { line-height: 1.55; }
+            header { padding: .65rem .75rem !important; }
+            header > div { flex-wrap: wrap; gap: .65rem; }
+            header nav { width: 100%; justify-content: space-between; gap: .35rem !important; }
+            #user-nav-group { flex: 1; }
+            #user-nav-group button, #btn-admin-toggle { min-height: 2.65rem; padding: .5rem .65rem !important; font-size: .75rem !important; }
+            #auth-nav-container { max-width: 100%; }
+            main { padding: .9rem !important; }
+            main, main * { min-width: 0; }
+            h1, h2, h3, h4, p, label, button, a, span { overflow-wrap: anywhere; }
+            h1 { font-size: clamp(1.45rem, 6vw, 2rem) !important; line-height: 1.35 !important; }
+            h2 { font-size: 1.1rem !important; line-height: 1.45 !important; }
+            .text-xs { line-height: 1.55; }
+            #home-region-filters button, #admin-region-tabs button { min-height: 2.6rem; }
+            #admin-region-tabs { width: 100%; }
+            #admin-region-tabs button { flex: 1 1 auto; }
+            #admin-new-region { flex: 1; width: auto !important; min-height: 2.6rem; }
+            #admin-tournaments-list-container > div { padding: .9rem; }
+            #admin-tournaments-list-container .font-mono { overflow-wrap: anywhere; }
+            input, select, textarea { max-width: 100%; font-size: 16px !important; }
+            table { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+            [role="dialog"] { max-height: calc(100dvh - 1rem); overflow-y: auto; }
+            .custom-scrollbar { scrollbar-width: thin; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-white">
