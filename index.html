@@ -13,8 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCfD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=1nf6mm99hz"></script>
     <!-- Google Fonts Inter & Noto Sans KR -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <!-- Canvas Confetti Library for Winner Effect -->
@@ -456,7 +455,7 @@
                     <ol id="nearby-ranking-list" class="space-y-2"></ol>
                 </section>
             </div>
-            <p class="text-[11px] leading-relaxed text-gray-500">위치 정보는 이 기기에서 주변 순위를 계산하는 데만 사용합니다. 지도 데이터는 OpenStreetMap에서 제공하며, 매장 위치가 표시되려면 관리자 화면에서 후보별 위도·경도를 등록해야 합니다.</p>
+            <p class="text-[11px] leading-relaxed text-gray-500">위치는 주변 순위를 이 기기에서 계산하는 데 사용하며 서버에 저장하지 않습니다. 네이버 지도에 현재 지도 영역이 전달될 수 있습니다. 매장 위치가 표시되려면 관리자 화면에서 후보별 위도·경도를 등록해야 합니다.</p>
         </section>
 
         <section id="view-community" class="hidden space-y-5 animate-fade-in">
@@ -1003,6 +1002,11 @@
                     <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="비밀번호 (6자 이상)" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-brand-orange">
                 </div>
                 <button id="auth-submit-button" type="submit" class="w-full py-3 rounded-xl bg-brand-orange text-white font-bold text-sm hover:opacity-90 transition-all">로그인</button>
+                <div class="flex items-center gap-3 py-1 text-[10px] text-gray-500"><span class="h-px flex-1 bg-brand-border"></span><span>또는</span><span class="h-px flex-1 bg-brand-border"></span></div>
+                <button type="button" onclick="signInWithKakao()" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] py-3 text-sm font-bold text-[#191919] transition-all hover:bg-[#F5DC00]">
+                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-[#191919] text-[11px] font-black text-[#FEE500]">K</span>
+                    카카오로 로그인 / 회원가입
+                </button>
                 <button id="auth-mode-toggle" type="button" onclick="toggleSupabaseAuthMode()" class="w-full py-2 text-xs font-semibold text-gray-300 hover:text-white">처음이신가요? 회원가입</button>
                 <p id="auth-form-message" class="hidden text-xs text-center leading-relaxed" aria-live="polite"></p>
             </form>
@@ -1793,7 +1797,7 @@
             if (viewName === 'nearby') {
                 requestAnimationFrame(() => {
                     ensureNearbyMap();
-                    if (nearbyMap) nearbyMap.invalidateSize();
+                    resizeNaverMap(nearbyMap);
                     renderNearbyResults();
                 });
             }
@@ -1819,23 +1823,43 @@
         }
 
         let nearbyMap = null;
-        let nearbyMapLayers = null;
+        let nearbyMapMarkers = [];
+        let nearbyRadiusCircle = null;
+        let nearbyCurrentMarker = null;
         let nearbyLocation = null;
         let nearbyRadiusKm = 3;
 
+        function resizeNaverMap(map) {
+            if (map && typeof map.autoResize === 'function') map.autoResize();
+        }
+
+        function toNaverLatLng(latitude, longitude) {
+            return new naver.maps.LatLng(latitude, longitude);
+        }
+
+        function clearNearbyMapOverlays() {
+            nearbyMapMarkers.forEach(marker => marker.setMap(null));
+            nearbyMapMarkers = [];
+            if (nearbyCurrentMarker) nearbyCurrentMarker.setMap(null);
+            nearbyCurrentMarker = null;
+            if (nearbyRadiusCircle) nearbyRadiusCircle.setMap(null);
+            nearbyRadiusCircle = null;
+        }
+
         function ensureNearbyMap() {
             const mapElement = document.getElementById('nearby-map');
-            if (!mapElement || !window.L) {
-                document.getElementById('nearby-status').textContent = '지도를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+            if (!mapElement || !window.naver?.maps) {
+                const status = document.getElementById('nearby-status');
+                if (status) status.textContent = '네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.';
                 return;
             }
             if (nearbyMap) return;
-            nearbyMap = L.map(mapElement).setView([37.5665, 126.9780], 12);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
-            }).addTo(nearbyMap);
-            nearbyMapLayers = L.layerGroup().addTo(nearbyMap);
+            nearbyMap = new naver.maps.Map(mapElement, {
+                center: toNaverLatLng(37.5665, 126.9780),
+                zoom: 12,
+                zoomControl: true,
+                zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }
+            });
         }
 
         function setNearbyRadius(value) {
@@ -1854,8 +1878,9 @@
                 nearbyLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
                 ensureNearbyMap();
                 if (nearbyMap) {
-                    nearbyMap.setView([nearbyLocation.latitude, nearbyLocation.longitude], 14);
-                    nearbyMap.invalidateSize();
+                    nearbyMap.setCenter(toNaverLatLng(nearbyLocation.latitude, nearbyLocation.longitude));
+                    nearbyMap.setZoom(14);
+                    resizeNaverMap(nearbyMap);
                 }
                 renderNearbyResults();
             }, error => {
@@ -1897,26 +1922,37 @@
             const status = document.getElementById('nearby-status');
             if (!list || !count) return;
             list.replaceChildren();
-            if (nearbyMapLayers) nearbyMapLayers.clearLayers();
+            clearNearbyMapOverlays();
             if (!nearbyLocation) {
                 count.textContent = '';
                 const item = document.createElement('li');
                 item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm text-gray-400';
                 item.textContent = '현재 위치를 사용하면 가까운 맛집 순위를 볼 수 있어요.';
                 list.appendChild(item);
-                if (nearbyMap) nearbyMap.invalidateSize();
+                resizeNaverMap(nearbyMap);
                 return;
             }
 
-            if (!window.L || !nearbyMap) {
-                status.textContent = '지도를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+            if (!window.naver?.maps || !nearbyMap) {
+                status.textContent = '네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.';
                 return;
             }
 
-            status.textContent = `현재 위치 기준 반경 ${nearbyRadiusKm}km · 위치는 이 기기에서만 사용합니다.`;
-            const currentMarker = L.circleMarker([nearbyLocation.latitude, nearbyLocation.longitude], { radius: 8, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }).bindPopup('현재 위치');
-            const radiusCircle = L.circle([nearbyLocation.latitude, nearbyLocation.longitude], { radius: nearbyRadiusKm * 1000, color: '#FF5E1E', weight: 2, fillColor: '#FF5E1E', fillOpacity: 0.08 });
-            if (nearbyMapLayers) nearbyMapLayers.addLayer(currentMarker).addLayer(radiusCircle);
+            status.textContent = `현재 위치 기준 반경 ${nearbyRadiusKm}km · 위치는 사이트 서버에 저장하지 않습니다.`;
+            const center = toNaverLatLng(nearbyLocation.latitude, nearbyLocation.longitude);
+            nearbyCurrentMarker = new naver.maps.Marker({
+                position: center,
+                map: nearbyMap,
+                title: '현재 위치',
+                icon: { content: '<div style="width:18px;height:18px;border:3px solid #fff;border-radius:50%;background:#2563eb;box-shadow:0 1px 6px #0008"></div>', anchor: new naver.maps.Point(9, 9) }
+            });
+            nearbyRadiusCircle = new naver.maps.Circle({
+                map: nearbyMap,
+                center,
+                radius: nearbyRadiusKm * 1000,
+                strokeColor: '#FF5E1E', strokeOpacity: 0.9, strokeWeight: 2,
+                fillColor: '#FF5E1E', fillOpacity: 0.08
+            });
             const candidates = getNearbyCandidates();
             count.textContent = `${candidates.length}곳`;
             if (!candidates.length) {
@@ -1924,19 +1960,26 @@
                 item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm leading-relaxed text-gray-400';
                 item.textContent = '반경 안에 좌표가 등록된 후보가 없습니다. 관리자 화면에서 맛집의 위도와 경도를 등록해 주세요.';
                 list.appendChild(item);
-                if (nearbyMap) nearbyMap.invalidateSize();
+                resizeNaverMap(nearbyMap);
                 return;
             }
 
-            const bounds = [radiusCircle.getBounds()];
+            const bounds = nearbyRadiusCircle.getBounds();
             candidates.forEach((candidate, index) => {
                 const distanceText = candidate.distance < 1000 ? `${Math.round(candidate.distance)}m` : `${(candidate.distance / 1000).toFixed(1)}km`;
-                const marker = L.marker([candidate.latitude, candidate.longitude]);
+                const marker = new naver.maps.Marker({
+                    position: toNaverLatLng(candidate.latitude, candidate.longitude),
+                    map: nearbyMap,
+                    title: `${index + 1}위 · ${candidate.name}`
+                });
+                nearbyMapMarkers.push(marker);
                 const popup = document.createElement('div');
-                popup.className = 'space-y-1';
+                popup.style.cssText = 'min-width:150px;padding:4px;color:#111827;font-size:12px;line-height:1.5';
                 const popupTitle = document.createElement('strong');
+                popupTitle.style.display = 'block';
                 popupTitle.textContent = `${index + 1}위 · ${candidate.name}`;
                 const popupDetails = document.createElement('div');
+                popupDetails.style.color = '#4b5563';
                 popupDetails.textContent = `${candidate.votes.toLocaleString()}표 · ${distanceText}`;
                 const popupMapLink = document.createElement('a');
                 popupMapLink.href = getNaverMapUrl(candidate);
@@ -1945,9 +1988,9 @@
                 popupMapLink.textContent = '네이버 지도에서 보기';
                 popupMapLink.style.cssText = 'display:inline-block;margin-top:4px;color:#03a94d;font-weight:700';
                 popup.append(popupTitle, popupDetails, popupMapLink);
-                marker.bindPopup(popup);
-                if (nearbyMapLayers) nearbyMapLayers.addLayer(marker);
-                bounds.push(marker.getLatLng());
+                const infoWindow = new naver.maps.InfoWindow({ content: popup, maxWidth: 240, borderWidth: 0, backgroundColor: '#fff' });
+                naver.maps.Event.addListener(marker, 'click', () => infoWindow.open(nearbyMap, marker));
+                bounds.extend(marker.getPosition());
 
                 const row = document.createElement('li');
                 row.className = 'flex items-center gap-3 rounded-xl border border-brand-border bg-brand-dark p-3';
@@ -1976,12 +2019,16 @@
                 mapLink.textContent = '네이버 지도';
                 right.append(votes, mapLink);
                 row.append(rank, details, right);
-                row.addEventListener('click', event => { if (event.target !== mapLink) marker.openPopup(); });
+                row.addEventListener('click', event => {
+                    if (event.target === mapLink || mapLink.contains(event.target)) return;
+                    infoWindow.open(nearbyMap, marker);
+                    nearbyMap.setCenter(marker.getPosition());
+                });
                 list.appendChild(row);
             });
             if (nearbyMap) {
-                nearbyMap.invalidateSize();
-                nearbyMap.fitBounds(L.latLngBounds(bounds), { padding: [24, 24], maxZoom: 15 });
+                resizeNaverMap(nearbyMap);
+                nearbyMap.fitBounds(bounds, { top: 24, right: 24, bottom: 24, left: 24, maxZoom: 15 });
             }
         }
 
@@ -3697,8 +3744,8 @@
             const picker = document.getElementById('candidate-location-picker');
             picker.classList.toggle('hidden');
             if (picker.classList.contains('hidden')) return;
-            if (!window.L) {
-                showToast('지도를 불러오지 못했습니다.');
+            if (!window.naver?.maps) {
+                showToast('네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.');
                 return;
             }
             const latValue = document.getElementById('input-candidate-latitude').value.trim();
@@ -3707,28 +3754,31 @@
             const lng = Number(lngValue);
             const hasCoordinates = Boolean(latValue && lngValue) && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
             if (!candidatePickerMap) {
-                candidatePickerMap = L.map('candidate-picker-map').setView(hasCoordinates ? [lat, lng] : [37.5665, 126.9780], hasCoordinates ? 16 : 12);
-                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
-                }).addTo(candidatePickerMap);
-                candidatePickerMap.on('click', event => {
-                    const pickedLat = event.latlng.lat;
-                    const pickedLng = event.latlng.lng;
+                candidatePickerMap = new naver.maps.Map('candidate-picker-map', {
+                    center: toNaverLatLng(hasCoordinates ? lat : 37.5665, hasCoordinates ? lng : 126.9780),
+                    zoom: hasCoordinates ? 16 : 12,
+                    zoomControl: true,
+                    zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }
+                });
+                naver.maps.Event.addListener(candidatePickerMap, 'click', event => {
+                    const pickedLat = event.coord.lat();
+                    const pickedLng = event.coord.lng();
                     document.getElementById('input-candidate-latitude').value = pickedLat.toFixed(6);
                     document.getElementById('input-candidate-longitude').value = pickedLng.toFixed(6);
-                    if (candidatePickerMarker) candidatePickerMarker.setLatLng(event.latlng);
-                    else candidatePickerMarker = L.marker(event.latlng).addTo(candidatePickerMap);
+                    if (candidatePickerMarker) candidatePickerMarker.setPosition(event.coord);
+                    else candidatePickerMarker = new naver.maps.Marker({ position: event.coord, map: candidatePickerMap });
                 });
             }
             setTimeout(() => {
-                candidatePickerMap.invalidateSize();
+                resizeNaverMap(candidatePickerMap);
                 if (hasCoordinates) {
-                    candidatePickerMap.setView([lat, lng], 16);
-                    if (candidatePickerMarker) candidatePickerMarker.setLatLng([lat, lng]);
-                    else candidatePickerMarker = L.marker([lat, lng]).addTo(candidatePickerMap);
+                    const position = toNaverLatLng(lat, lng);
+                    candidatePickerMap.setCenter(position);
+                    candidatePickerMap.setZoom(16);
+                    if (candidatePickerMarker) candidatePickerMarker.setPosition(position);
+                    else candidatePickerMarker = new naver.maps.Marker({ position, map: candidatePickerMap });
                 } else if (candidatePickerMarker) {
-                    candidatePickerMap.removeLayer(candidatePickerMarker);
+                    candidatePickerMarker.setMap(null);
                     candidatePickerMarker = null;
                 }
             }, 0);
@@ -3962,6 +4012,33 @@
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = supabaseAuthMode === 'signup' ? '회원가입' : '로그인';
+            }
+        }
+
+        async function signInWithKakao() {
+            if (!supabaseClient) {
+                showAuthFormMessage('Supabase 인증 설정을 불러오지 못했습니다.', true);
+                return;
+            }
+            const button = document.querySelector('#login-form-user button[onclick="signInWithKakao()"]');
+            const originalText = button?.textContent || '';
+            if (button) {
+                button.disabled = true;
+                button.textContent = '카카오로 이동 중…';
+            }
+            try {
+                const redirectTo = `${window.location.origin}${window.location.pathname}`;
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'kakao',
+                    options: { redirectTo }
+                });
+                if (error) throw error;
+            } catch (error) {
+                showAuthFormMessage(error.message || '카카오 로그인에 실패했습니다.', true);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
             }
         }
 
