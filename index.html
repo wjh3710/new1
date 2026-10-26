@@ -4030,11 +4030,7 @@
                 const redirectTo = `${window.location.origin}${window.location.pathname}`;
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'kakao',
-                    options: {
-                        redirectTo,
-                        // 인증에 필요한 OIDC 식별자만 요청하고 프로필/이메일 동의는 요청하지 않습니다.
-                        scopes: 'openid'
-                    }
+                    options: { redirectTo }
                 });
                 if (error) throw error;
             } catch (error) {
