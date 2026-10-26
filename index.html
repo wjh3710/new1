@@ -13,6 +13,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCfD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Google Fonts Inter & Noto Sans KR -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <!-- Canvas Confetti Library for Winner Effect -->
@@ -84,6 +86,7 @@
             background: #3F3F4E;
         }
         .live-dot { animation: live-pulse 1.4s ease-out infinite; }
+        #nearby-map { height: 380px; }
         @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
         @media (max-width: 640px) {
             html { -webkit-text-size-adjust: 100%; }
@@ -91,10 +94,12 @@
             header { padding: .65rem .75rem !important; }
             header > div { flex-wrap: wrap; gap: .65rem; }
             header nav { width: 100%; justify-content: space-between; gap: .4rem !important; }
-            #user-nav-group { flex: 1 1 auto; min-width: 0; }
-            #user-nav-group button, #btn-admin-toggle { min-height: 2.75rem; padding: .5rem .65rem !important; font-size: .8125rem !important; line-height: 1.35; white-space: normal; }
+            #btn-admin-toggle { min-height: 2.75rem; padding: .5rem .65rem !important; font-size: .8125rem !important; line-height: 1.35; white-space: normal; }
             #auth-nav-container { max-width: 100%; }
-            main { padding: .75rem !important; }
+            main { padding: .75rem .75rem 6rem !important; }
+            #nearby-map { height: 52vh; min-height: 300px; }
+            #search-region-select { width: 9rem !important; min-width: 9rem; }
+            #nearby-radius { width: auto !important; }
             main, main * { min-width: 0; }
             h1, h2, h3, h4, p, label { overflow-wrap: anywhere; word-break: keep-all; }
             h1 { font-size: clamp(1.3rem, 5.7vw, 1.75rem) !important; line-height: 1.3 !important; }
@@ -115,8 +120,8 @@
             #view-home > .relative > div:first-child { display: flex; flex-direction: column; gap: .35rem; }
             #view-home > .relative > div:first-child p { display: none; }
             #view-home > .relative > div:last-child { display: none; }
-            #view-home > div:nth-child(2) > .flex:first-child { align-items: flex-start; gap: .25rem; flex-direction: column; margin-bottom: .55rem !important; }
-            #view-home > div:nth-child(2) > .flex:first-child > span { font-size: .7rem; }
+            #view-home > div:nth-child(3) > .flex:first-child { align-items: flex-start; gap: .25rem; flex-direction: column; margin-bottom: .55rem !important; }
+            #view-home > div:nth-child(3) > .flex:first-child > span { font-size: .7rem; }
             #home-region-filters, #admin-region-tabs { gap: .4rem !important; }
             #home-region-filters button, #admin-region-tabs button {
                 min-height: 2.5rem;
@@ -215,8 +220,9 @@
         @media (max-width: 380px) {
             header { padding-inline: .6rem !important; }
             main { padding: .7rem !important; }
-            #user-nav-group button, #btn-admin-toggle { padding-inline: .45rem !important; font-size: .75rem !important; }
+            #btn-admin-toggle { padding-inline: .45rem !important; font-size: .75rem !important; }
             #view-home > .relative { padding: .75rem !important; }
+            main { padding-bottom: 6rem !important; }
             #home-region-filters button { flex: 1 1 calc(50% - .4rem); }
         }
     </style>
@@ -262,16 +268,9 @@
 
             <!-- Navigation Tabs -->
             <nav class="flex items-center gap-1.5 sm:gap-3">
-                <!-- User Nav Items -->
-                <div id="user-nav-group" class="flex items-center gap-1 sm:gap-2">
-                    <button onclick="showView('home')" id="nav-home" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all">
-                        <i class="fa-solid fa-trophy mr-1"></i> 투표
-                    </button>
-                    <button onclick="showView('tierlist')" id="nav-tierlist" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all">
-                        <i class="fa-solid fa-layer-group mr-1"></i> 맛집 티어표
-                    </button>
-                </div>
-
+                <button id="nav-search-button" onclick="openFoodSearch()" class="px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg border border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white transition-all flex items-center gap-1.5" aria-label="맛집 검색 열기">
+                    <i class="fa-solid fa-magnifying-glass"></i><span>검색</span>
+                </button>
                 <!-- Admin Console Direct Toggle Button -->
                 <button onclick="toggleAdminView()" id="btn-admin-toggle" class="hidden px-3 py-1.5 text-xs sm:text-sm font-bold border border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
@@ -287,10 +286,18 @@
     </header>
 
     <!-- Main Container -->
-    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6">
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 pb-24 sm:p-6">
 
         <!-- ================= USER VIEW 1: HOME (Tournament Selection) ================= -->
         <section id="view-home" class="space-y-8 animate-fade-in">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-brand-border bg-brand-card/70 p-4">
+                <div><p class="text-xs font-bold text-brand-orange">지역별 맛집 랭킹</p><p class="text-sm text-gray-300">지역을 고르면 해당 지역의 투표와 검색 통계를 확인할 수 있어요.</p></div>
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-300">지역
+                    <select id="home-region-select" onchange="setCurrentRegion(this.value)" class="min-w-32 rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-white">
+                        <option value="전체">전체</option>
+                    </select>
+                </label>
+            </div>
             <!-- Hero Banner -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-card via-brand-dark to-brand-card border border-brand-border p-6 sm:p-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div class="space-y-3 max-w-xl z-10">
@@ -423,6 +430,109 @@
             </section>
         </section>
 
+
+        <section id="view-nearby" class="hidden space-y-5 animate-fade-in">
+            <div class="flex flex-col gap-4 rounded-2xl border border-brand-border bg-brand-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div>
+                    <p class="text-xs font-bold text-brand-neon">내 주변 맛집</p>
+                    <h1 class="mt-1 text-2xl font-black text-white">현재 위치에서 가까운 순위</h1>
+                    <p id="nearby-status" class="mt-2 text-sm text-gray-400">위치 정보를 켜면 선택한 반경 안의 맛집을 보여드려요.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label for="nearby-radius" class="text-xs font-bold text-gray-300">반경</label>
+                    <select id="nearby-radius" onchange="setNearbyRadius(this.value)" class="rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm font-bold text-white" style="color-scheme: dark">
+                        <option value="1">1km</option><option value="3" selected>3km</option><option value="5">5km</option><option value="10">10km</option>
+                    </select>
+                    <button onclick="requestNearbyLocation()" class="rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-orange/90"><i class="fa-solid fa-location-crosshairs mr-1"></i>현재 위치 사용</button>
+                </div>
+            </div>
+            <div class="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
+                <div id="nearby-map" class="z-0 overflow-hidden rounded-2xl border border-brand-border bg-brand-card" aria-label="현재 위치와 주변 맛집 지도"></div>
+                <section class="min-h-80 rounded-2xl border border-brand-border bg-brand-card p-4 sm:p-5">
+                    <div class="mb-3 flex items-center justify-between gap-2">
+                        <h2 class="font-bold text-white">반경 내 맛집 순위</h2>
+                        <span id="nearby-result-count" class="text-xs text-gray-500"></span>
+                    </div>
+                    <ol id="nearby-ranking-list" class="space-y-2"></ol>
+                </section>
+            </div>
+            <p class="text-[11px] leading-relaxed text-gray-500">위치 정보는 이 기기에서 주변 순위를 계산하는 데만 사용합니다. 지도 데이터는 OpenStreetMap에서 제공하며, 매장 위치가 표시되려면 관리자 화면에서 후보별 위도·경도를 등록해야 합니다.</p>
+        </section>
+
+        <section id="view-community" class="hidden space-y-5 animate-fade-in">
+            <div class="rounded-2xl border border-brand-border bg-gradient-to-br from-brand-card to-brand-dark p-5 sm:p-7">
+                <p class="text-xs font-bold text-brand-orange">f.rank. EAT & TALK</p>
+                <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div><h1 class="text-2xl font-black text-white">오늘 뭐 먹었어?</h1><p class="mt-1 text-sm text-gray-400">맛집 픽과 솔직한 한 줄을 나눠봐요.</p></div>
+                    <button onclick="toggleCommunityComposer()" class="rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-orange/90"><i class="fa-solid fa-pen mr-1"></i>글쓰기</button>
+                </div>
+            </div>
+            <form id="community-composer" onsubmit="submitCommunityPost(event)" class="hidden space-y-3 rounded-2xl border border-brand-orange/30 bg-brand-card p-4 sm:p-5">
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="text-xs font-bold text-gray-300">닉네임
+                        <input id="community-author" maxlength="20" required placeholder="예: 국밥에 진심" class="mt-1 w-full rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm text-white">
+                    </label>
+                    <label class="text-xs font-bold text-gray-300">지역
+                        <select id="community-region" class="mt-1 w-full rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm text-white" style="color-scheme: dark"></select>
+                    </label>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="text-xs font-bold text-gray-300">글 종류
+                        <select id="community-category" class="mt-1 w-full rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm text-white" style="color-scheme: dark">
+                            <option value="오늘의 먹픽">오늘의 먹픽</option><option value="내돈내산">내돈내산</option><option value="맛집 질문">맛집 질문</option><option value="혼밥 메이트">혼밥 메이트</option>
+                        </select>
+                    </label>
+                    <label class="text-xs font-bold text-gray-300">식당 이름 <span class="font-normal text-gray-500">(선택)</span>
+                        <input id="community-restaurant" maxlength="80" placeholder="예: 성수다락" class="mt-1 w-full rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm text-white">
+                    </label>
+                </div>
+                <label class="block text-xs font-bold text-gray-300">제목
+                    <input id="community-title" maxlength="100" required placeholder="오늘의 맛집 픽을 제목으로 남겨주세요" class="mt-1 w-full rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm text-white">
+                </label>
+                <label class="block text-xs font-bold text-gray-300">내용
+                    <textarea id="community-content" maxlength="2000" rows="4" required placeholder="메뉴 추천, 웨이팅 팁, 솔직 후기 등을 나눠주세요." class="mt-1 w-full resize-y rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm leading-relaxed text-white"></textarea>
+                </label>
+                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button type="button" onclick="toggleCommunityComposer(false)" class="rounded-xl bg-brand-border px-4 py-2.5 text-xs font-bold text-gray-300">취소</button>
+                    <button type="submit" class="rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-bold text-white">커뮤니티에 올리기</button>
+                </div>
+            </form>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-300">지역
+                    <select id="community-region-filter" onchange="loadCommunityFeed()" class="rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-white" style="color-scheme: dark"><option value="전체">전체</option></select>
+                </label>
+                <div class="flex gap-2" role="group" aria-label="게시글 정렬">
+                    <button id="community-sort-latest" onclick="setCommunitySort('latest')" class="rounded-lg bg-brand-orange px-3 py-2 text-xs font-bold text-white">최신</button>
+                    <button id="community-sort-hot" onclick="setCommunitySort('hot')" class="rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-bold text-gray-300">반응순</button>
+                </div>
+            </div>
+            <div id="community-category-filters" class="flex gap-2 overflow-x-auto pb-1" aria-label="커뮤니티 글 종류"></div>
+            <p id="community-status" class="hidden text-xs text-gray-400" role="status"></p>
+            <div id="community-feed" class="space-y-3"></div>
+        </section>
+
+        <section id="view-mypage" class="hidden space-y-5 animate-fade-in">
+            <div class="rounded-2xl border border-brand-border bg-brand-card p-5 sm:p-7">
+                <p class="text-xs font-bold text-brand-orange">MY PAGE</p>
+                <h1 class="mt-1 text-2xl font-black text-white">마이페이지</h1>
+                <div id="mypage-profile" class="mt-5"></div>
+            </div>
+            <section class="rounded-2xl border border-brand-border bg-brand-card p-5 sm:p-7">
+                <div class="mb-4 flex items-center justify-between gap-2"><h2 class="font-bold text-white">오늘 내 투표</h2><span id="mypage-vote-count" class="text-xs text-gray-500"></span></div>
+                <div id="mypage-vote-history" class="space-y-2"></div>
+            </section>
+            <section class="rounded-2xl border border-brand-border bg-brand-card p-5 sm:p-7">
+                <div class="mb-4 flex items-center justify-between gap-2"><h2 class="font-bold text-white">저장한 커뮤니티 글</h2><span class="text-xs text-gray-500">🔖</span></div>
+                <div id="mypage-saved-posts" class="space-y-2"></div>
+            </section>
+            <section id="mypage-account-actions" class="hidden rounded-2xl border border-brand-border bg-brand-card p-5 sm:p-7">
+                <h2 class="mb-3 font-bold text-white">계정 관리</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="AuthService.logout()" class="rounded-xl bg-brand-border px-4 py-2.5 text-xs font-bold text-gray-200 hover:text-white">로그아웃</button>
+                    <button onclick="openAccountDeletionModal()" class="rounded-xl bg-red-950/60 px-4 py-2.5 text-xs font-bold text-red-300 hover:bg-red-900">회원 탈퇴</button>
+                </div>
+            </section>
+        </section>
 
         <!-- ================= VIEW 5: ADMIN DASHBOARD (Admin Console) ================= -->
         <section id="view-admin" class="hidden space-y-6 animate-fade-in">
@@ -704,6 +814,26 @@
 
     </main>
 
+    <nav id="bottom-tab-bar" aria-label="주요 메뉴" class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-border bg-brand-dark/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,.25)] backdrop-blur-xl">
+        <div class="mx-auto grid max-w-2xl grid-cols-5">
+            <button type="button" data-bottom-tab="home" onclick="showView('home')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-brand-orange" aria-label="현재 진행 중인 투표">
+                <i class="fa-solid fa-fire text-lg"></i><span class="text-[10px] font-bold">투표</span>
+            </button>
+            <button type="button" data-bottom-tab="tierlist" onclick="showView('tierlist')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="맛집 티어표">
+                <i class="fa-solid fa-ranking-star text-lg"></i><span class="text-[10px] font-bold">티어표</span>
+            </button>
+            <button type="button" data-bottom-tab="nearby" onclick="showView('nearby')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="내 주변 맛집">
+                <i class="fa-solid fa-map-location-dot text-lg"></i><span class="text-[10px] font-bold">내 주변</span>
+            </button>
+            <button type="button" data-bottom-tab="community" onclick="showView('community')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="맛집 커뮤니티">
+                <i class="fa-solid fa-comments text-lg"></i><span class="text-[10px] font-bold">커뮤니티</span>
+            </button>
+            <button type="button" data-bottom-tab="mypage" onclick="showView('mypage')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="마이페이지">
+                <i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-bold">마이</span>
+            </button>
+        </div>
+    </nav>
+
 
     <!-- ================= MODAL 1: INSTAGRAM STORY SHARE CARD ================= -->
     <div id="modal-share" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
@@ -782,6 +912,73 @@
 
 
     <!-- ================= MODAL 2: USER & ADMIN LOGIN MODAL ================= -->
+    <div id="modal-food-search" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm hidden items-start justify-center overflow-y-auto p-4 pt-[8vh]" role="dialog" aria-modal="true" aria-labelledby="food-search-title">
+        <div class="bg-brand-card border border-brand-border rounded-2xl max-w-4xl w-full p-5 sm:p-7 space-y-5 shadow-2xl shadow-black/50">
+            <div class="flex items-start justify-between gap-3">
+                <div><h2 id="food-search-title" class="text-xl font-black text-white">맛집과 메뉴 검색</h2><p class="mt-1 text-xs text-gray-400">검색어를 입력하거나 지금 인기 있는 메뉴와 음식 1위를 확인해 보세요.</p></div>
+                <button onclick="closeFoodSearch()" class="rounded-lg px-2 py-1 text-gray-400 hover:text-white" aria-label="검색 닫기"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <label class="flex shrink-0 items-center gap-2 rounded-xl border border-brand-border bg-brand-dark px-3 text-xs font-bold text-gray-300">지역
+                    <span class="relative inline-flex items-center">
+                        <select id="search-region-select" onchange="setCurrentRegion(this.value)" class="w-36 appearance-none bg-brand-dark py-3 pr-7 text-sm font-bold text-white focus:outline-none" style="color-scheme: dark">
+                            <option value="전체">전체</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down pointer-events-none absolute right-1 text-[10px] text-brand-orange" aria-hidden="true"></i>
+                    </span>
+                </label>
+                <form class="flex min-w-0 flex-1 gap-2" onsubmit="searchFood(event)">
+                    <input id="food-search-input" type="search" maxlength="80" oninput="handleFoodSearchInput()" placeholder="식당 또는 메뉴 검색" class="min-w-0 flex-1 rounded-xl border border-brand-border bg-brand-dark px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-brand-orange focus:outline-none">
+                    <button class="shrink-0 rounded-xl bg-brand-orange px-4 py-3 text-sm font-bold text-white hover:bg-brand-orange/90"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button>
+                </form>
+            </div>
+            <div id="food-search-results" class="hidden space-y-2"></div>
+            <div class="grid gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                <section class="rounded-xl border border-brand-border bg-brand-dark p-4" aria-labelledby="popular-search-heading">
+                    <h3 id="popular-search-heading" class="mb-3 text-sm font-bold text-brand-neon">인기 검색 메뉴 순위</h3>
+                    <ol id="popular-search-terms" class="space-y-2"></ol>
+                </section>
+                <section class="rounded-xl border border-brand-border bg-brand-dark p-4" aria-labelledby="menu-winner-heading">
+                    <h3 id="menu-winner-heading" class="text-sm font-bold text-brand-yellow">선택한 메뉴의 1등 음식</h3>
+                    <p id="selected-search-menu" class="mt-1 text-xs text-gray-500">인기 메뉴를 선택해 주세요.</p>
+                    <div id="menu-winner" class="mt-4"></div>
+                </section>
+            </div>
+            <p id="food-search-message" class="hidden text-xs text-gray-400" role="status"></p>
+        </div>
+    </div>
+
+    <div id="modal-account-deletion" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="account-deletion-title" aria-describedby="account-deletion-description">
+        <div class="bg-brand-card border border-red-900/70 rounded-2xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/50">
+            <div class="flex items-start gap-4">
+                <div class="w-11 h-11 shrink-0 rounded-xl bg-red-950/70 border border-red-900/70 flex items-center justify-center text-red-300 text-lg">
+                    <i class="fa-solid fa-user-xmark" aria-hidden="true"></i>
+                </div>
+                <div class="space-y-1">
+                    <h2 id="account-deletion-title" class="text-lg font-bold text-white">회원 탈퇴</h2>
+                    <p class="text-xs text-gray-400">탈퇴 전에 삭제되는 정보를 확인해 주세요.</p>
+                </div>
+            </div>
+            <div id="account-deletion-description" class="rounded-xl border border-red-900/50 bg-red-950/25 p-4 space-y-3 text-sm">
+                <p class="font-bold text-red-200">탈퇴하면 다음 정보가 영구 삭제됩니다.</p>
+                <ul class="space-y-2 text-xs leading-relaxed text-gray-300">
+                    <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-red-300" aria-hidden="true"></i><span>로그인에 사용하는 계정과 이메일 인증 정보</span></li>
+                    <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 text-red-300" aria-hidden="true"></i><span>본인 계정으로 기록된 모든 투표 기록</span></li>
+                    <li class="flex gap-2"><i class="fa-solid fa-circle-exclamation mt-0.5 text-red-300" aria-hidden="true"></i><span>탈퇴한 계정과 투표 기록은 복구할 수 없습니다.</span></li>
+                </ul>
+            </div>
+            <label class="flex items-start gap-2.5 text-xs leading-relaxed text-gray-300 cursor-pointer">
+                <input id="account-deletion-confirm" type="checkbox" class="mt-0.5 accent-red-500">
+                <span>안내 내용을 확인했으며, 회원 탈퇴와 투표 기록 삭제에 동의합니다.</span>
+            </label>
+            <p id="account-deletion-error" class="hidden text-xs text-red-300" role="alert"></p>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+                <button type="button" onclick="closeAccountDeletionModal()" class="px-4 py-2.5 rounded-xl bg-brand-border text-gray-200 hover:text-white text-xs font-semibold">취소</button>
+                <button id="account-deletion-submit" type="button" onclick="deleteMyAccount()" disabled class="px-4 py-2.5 rounded-xl bg-red-700 text-white text-xs font-bold transition-all enabled:hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed">계정과 투표 기록 삭제</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-login" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 space-y-5 relative">
             <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
@@ -933,6 +1130,20 @@
                     </div>
                     <input type="url" id="input-candidate-naver" placeholder="https://map.naver.com/p/search/..." class="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#03C75A] font-mono">
                     <p class="text-[10px] text-gray-500">사용자가 해당 맛집의 네이버 지도 상세 정보(위치, 영업시간, 영수증 리뷰)를 바로 확인할 수 있습니다.</p>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <label class="text-[10px] font-bold text-gray-400">위도
+                            <input type="number" id="input-candidate-latitude" step="any" min="-90" max="90" placeholder="예: 37.5446" class="mt-1 w-full rounded-lg border border-brand-border bg-brand-card px-2.5 py-2 text-xs text-white">
+                        </label>
+                        <label class="text-[10px] font-bold text-gray-400">경도
+                            <input type="number" id="input-candidate-longitude" step="any" min="-180" max="180" placeholder="예: 127.0560" class="mt-1 w-full rounded-lg border border-brand-border bg-brand-card px-2.5 py-2 text-xs text-white">
+                        </label>
+                    </div>
+                    <p class="text-[10px] text-gray-500">내 주변 지도와 반경 순위에 표시하려면 두 좌표를 모두 입력하세요.</p>
+                    <button type="button" onclick="toggleCandidateLocationPicker()" class="rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-[11px] font-bold text-gray-300 hover:border-brand-orange hover:text-white"><i class="fa-solid fa-map-pin mr-1 text-brand-orange"></i>지도에서 위치 선택</button>
+                    <div id="candidate-location-picker" class="hidden overflow-hidden rounded-xl border border-brand-border">
+                        <div class="bg-brand-card px-3 py-2 text-[10px] text-gray-400">지도를 이동한 뒤 매장 위치를 눌러 좌표를 지정하세요.</div>
+                        <div id="candidate-picker-map" class="h-56"></div>
+                    </div>
                 </div>
 
                 <div>
@@ -989,7 +1200,7 @@
 
 
     <!-- Footer -->
-    <footer class="border-t border-brand-border bg-brand-dark py-6 px-4 text-center text-xs text-gray-500">
+    <footer class="border-t border-brand-border bg-brand-dark px-4 pb-24 pt-6 text-center text-xs text-gray-500">
         <div class="max-w-6xl mx-auto space-y-2">
             <div class="flex flex-wrap justify-center items-center gap-4 text-gray-400">
                 <span class="font-bold">f.rank. · Food.Rank</span>
@@ -1144,7 +1355,12 @@
 
         function getNaverMapUrl(candidate) {
             if (candidate && candidate.naverUrl && candidate.naverUrl.trim() !== '') {
-                return candidate.naverUrl.trim();
+                try {
+                    const savedUrl = new URL(candidate.naverUrl.trim());
+                    if (savedUrl.protocol === 'https:' || savedUrl.protocol === 'http:') return savedUrl.href;
+                } catch (error) {
+                    console.warn('Invalid saved Naver map URL', error);
+                }
             }
             const queryName = candidate ? candidate.name : '';
             return `https://map.naver.com/p/search/${encodeURIComponent(queryName)}`;
@@ -1206,6 +1422,9 @@
                                 <button onclick="AuthService.logout()" class="px-2.5 py-1.5 text-xs font-bold bg-brand-border hover:bg-gray-700 text-gray-300 rounded-lg transition-all">
                                     로그아웃
                                 </button>
+                                <button onclick="openAccountDeletionModal()" class="px-2.5 py-1.5 text-xs font-bold bg-red-950/60 hover:bg-red-900 text-red-300 rounded-lg transition-all">
+                                    회원탈퇴
+                                </button>
                             </div>
                         `;
                     } else {
@@ -1218,6 +1437,9 @@
                                 </span>
                                 <button onclick="AuthService.logout()" class="px-2.5 py-1.5 text-xs font-bold bg-brand-border hover:bg-gray-700 text-gray-300 rounded-lg transition-all">
                                     로그아웃
+                                </button>
+                                <button onclick="openAccountDeletionModal()" class="px-2.5 py-1.5 text-xs font-bold bg-red-950/60 hover:bg-red-900 text-red-300 rounded-lg transition-all">
+                                    회원탈퇴
                                 </button>
                             </div>
                         `;
@@ -1487,7 +1709,9 @@
         // 5. USER POLL STATE & LOGIC
         // ========================================================
         let currentTournament = null;
-        let currentRegion = localStorage.getItem("FOOD_CURRENT_REGION") || "성수";
+        let currentRegion = localStorage.getItem("FOOD_CURRENT_REGION_V2") || "전체";
+        let selectedPopularSearchTerm = null;
+        let foodSearchRenderToken = 0;
         let myUserTierResult = null;
 
         // Tierlist View Mode ('overall' | 'category') & selected category
@@ -1516,6 +1740,9 @@
             if (activeView === 'view-game') renderPoll();
             else if (activeView === 'view-admin' && AuthService.isAdmin()) refreshAdminData();
             else if (activeView === 'view-tierlist') renderTierlist();
+            else if (activeView === 'view-nearby') renderNearbyResults();
+            else if (activeView === 'view-community') loadCommunityFeed();
+            else if (activeView === 'view-mypage') renderMyPage();
             else renderHomeCategories();
         }
 
@@ -1542,24 +1769,16 @@
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.add('hidden');
             document.getElementById('view-tierlist').classList.add('hidden');
+            document.getElementById('view-nearby').classList.add('hidden');
+            document.getElementById('view-community').classList.add('hidden');
+            document.getElementById('view-mypage').classList.add('hidden');
             document.getElementById('view-admin').classList.add('hidden');
 
             const targetView = document.getElementById(`view-${viewName}`);
             if (targetView) targetView.classList.remove('hidden');
 
-            const navHome = document.getElementById('nav-home');
-            const navTierlist = document.getElementById('nav-tierlist');
             const btnAdminToggle = document.getElementById('btn-admin-toggle');
-
-            if (navHome && navTierlist) {
-                navHome.className = viewName === 'home' 
-                    ? 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
-                    : 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
-                
-                navTierlist.className = viewName === 'tierlist'
-                    ? 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-brand-orange text-white transition-all'
-                    : 'px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-gray-400 hover:text-white hover:bg-brand-card transition-all';
-            }
+            setBottomNavActive(viewName === 'game' || viewName === 'result' || viewName === 'admin' ? 'home' : viewName);
 
             if (btnAdminToggle) {
                 btnAdminToggle.className = viewName === 'admin'
@@ -1571,8 +1790,691 @@
             if (viewName === 'tierlist') {
                 renderTierlist();
             }
+            if (viewName === 'nearby') {
+                requestAnimationFrame(() => {
+                    ensureNearbyMap();
+                    if (nearbyMap) nearbyMap.invalidateSize();
+                    renderNearbyResults();
+                });
+            }
+            if (viewName === 'community') {
+                populateCommunityRegionOptions();
+                loadCommunityFeed();
+            }
+            if (viewName === 'mypage') {
+                renderMyPage();
+                if (supabaseClient) StatsService.refresh().then(renderMyPage);
+            }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setBottomNavActive(tabName) {
+            document.querySelectorAll('[data-bottom-tab]').forEach(button => {
+                const active = button.dataset.bottomTab === tabName;
+                button.classList.toggle('text-brand-orange', active);
+                button.classList.toggle('text-gray-500', !active);
+                button.setAttribute('aria-current', active ? 'page' : 'false');
+            });
+        }
+
+        let nearbyMap = null;
+        let nearbyMapLayers = null;
+        let nearbyLocation = null;
+        let nearbyRadiusKm = 3;
+
+        function ensureNearbyMap() {
+            const mapElement = document.getElementById('nearby-map');
+            if (!mapElement || !window.L) {
+                document.getElementById('nearby-status').textContent = '지도를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+                return;
+            }
+            if (nearbyMap) return;
+            nearbyMap = L.map(mapElement).setView([37.5665, 126.9780], 12);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+            }).addTo(nearbyMap);
+            nearbyMapLayers = L.layerGroup().addTo(nearbyMap);
+        }
+
+        function setNearbyRadius(value) {
+            nearbyRadiusKm = Number(value) || 3;
+            renderNearbyResults();
+        }
+
+        function requestNearbyLocation() {
+            const status = document.getElementById('nearby-status');
+            if (!navigator.geolocation) {
+                status.textContent = '이 브라우저에서는 위치 기능을 사용할 수 없습니다.';
+                return;
+            }
+            status.textContent = '현재 위치를 확인하고 있어요…';
+            navigator.geolocation.getCurrentPosition(position => {
+                nearbyLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+                ensureNearbyMap();
+                if (nearbyMap) {
+                    nearbyMap.setView([nearbyLocation.latitude, nearbyLocation.longitude], 14);
+                    nearbyMap.invalidateSize();
+                }
+                renderNearbyResults();
+            }, error => {
+                const messages = {
+                    1: '위치 권한이 거부됐어요. 브라우저 설정에서 위치 권한을 허용해 주세요.',
+                    2: '현재 위치를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+                    3: '위치 확인 시간이 초과됐습니다. 다시 시도해 주세요.'
+                };
+                status.textContent = messages[error.code] || '현재 위치를 가져오지 못했습니다.';
+            }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 30000 });
+        }
+
+        function getDistanceMeters(from, to) {
+            const radians = degrees => degrees * Math.PI / 180;
+            const dLat = radians(to.latitude - from.latitude);
+            const dLon = radians(to.longitude - from.longitude);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(dLon / 2) ** 2;
+            return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function getNearbyCandidates() {
+            return DataService.getTournaments().filter(tournament => tournament.active !== false)
+                .flatMap(tournament => (tournament.candidates || []).map(candidate => ({ ...candidate, tournamentId: String(tournament.id), region: getTournamentRegion(tournament) })))
+                .filter(candidate => Number.isFinite(Number(candidate.latitude)) && Number.isFinite(Number(candidate.longitude)))
+                .map(candidate => ({
+                    ...candidate,
+                    latitude: Number(candidate.latitude),
+                    longitude: Number(candidate.longitude),
+                    distance: getDistanceMeters(nearbyLocation, { latitude: Number(candidate.latitude), longitude: Number(candidate.longitude) }),
+                    votes: getCandidateVotes(candidate)
+                }))
+                .filter(candidate => candidate.distance <= nearbyRadiusKm * 1000)
+                .sort((a, b) => b.votes - a.votes || a.distance - b.distance);
+        }
+
+        function renderNearbyResults() {
+            const list = document.getElementById('nearby-ranking-list');
+            const count = document.getElementById('nearby-result-count');
+            const status = document.getElementById('nearby-status');
+            if (!list || !count) return;
+            list.replaceChildren();
+            if (nearbyMapLayers) nearbyMapLayers.clearLayers();
+            if (!nearbyLocation) {
+                count.textContent = '';
+                const item = document.createElement('li');
+                item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm text-gray-400';
+                item.textContent = '현재 위치를 사용하면 가까운 맛집 순위를 볼 수 있어요.';
+                list.appendChild(item);
+                if (nearbyMap) nearbyMap.invalidateSize();
+                return;
+            }
+
+            if (!window.L || !nearbyMap) {
+                status.textContent = '지도를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+                return;
+            }
+
+            status.textContent = `현재 위치 기준 반경 ${nearbyRadiusKm}km · 위치는 이 기기에서만 사용합니다.`;
+            const currentMarker = L.circleMarker([nearbyLocation.latitude, nearbyLocation.longitude], { radius: 8, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }).bindPopup('현재 위치');
+            const radiusCircle = L.circle([nearbyLocation.latitude, nearbyLocation.longitude], { radius: nearbyRadiusKm * 1000, color: '#FF5E1E', weight: 2, fillColor: '#FF5E1E', fillOpacity: 0.08 });
+            if (nearbyMapLayers) nearbyMapLayers.addLayer(currentMarker).addLayer(radiusCircle);
+            const candidates = getNearbyCandidates();
+            count.textContent = `${candidates.length}곳`;
+            if (!candidates.length) {
+                const item = document.createElement('li');
+                item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm leading-relaxed text-gray-400';
+                item.textContent = '반경 안에 좌표가 등록된 후보가 없습니다. 관리자 화면에서 맛집의 위도와 경도를 등록해 주세요.';
+                list.appendChild(item);
+                if (nearbyMap) nearbyMap.invalidateSize();
+                return;
+            }
+
+            const bounds = [radiusCircle.getBounds()];
+            candidates.forEach((candidate, index) => {
+                const distanceText = candidate.distance < 1000 ? `${Math.round(candidate.distance)}m` : `${(candidate.distance / 1000).toFixed(1)}km`;
+                const marker = L.marker([candidate.latitude, candidate.longitude]);
+                const popup = document.createElement('div');
+                popup.className = 'space-y-1';
+                const popupTitle = document.createElement('strong');
+                popupTitle.textContent = `${index + 1}위 · ${candidate.name}`;
+                const popupDetails = document.createElement('div');
+                popupDetails.textContent = `${candidate.votes.toLocaleString()}표 · ${distanceText}`;
+                const popupMapLink = document.createElement('a');
+                popupMapLink.href = getNaverMapUrl(candidate);
+                popupMapLink.target = '_blank';
+                popupMapLink.rel = 'noopener noreferrer';
+                popupMapLink.textContent = '네이버 지도에서 보기';
+                popupMapLink.style.cssText = 'display:inline-block;margin-top:4px;color:#03a94d;font-weight:700';
+                popup.append(popupTitle, popupDetails, popupMapLink);
+                marker.bindPopup(popup);
+                if (nearbyMapLayers) nearbyMapLayers.addLayer(marker);
+                bounds.push(marker.getLatLng());
+
+                const row = document.createElement('li');
+                row.className = 'flex items-center gap-3 rounded-xl border border-brand-border bg-brand-dark p-3';
+                const rank = document.createElement('span');
+                rank.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/15 text-xs font-black text-brand-orange';
+                rank.textContent = String(index + 1);
+                const details = document.createElement('span');
+                details.className = 'min-w-0 flex-1';
+                const name = document.createElement('strong');
+                name.className = 'block truncate text-sm text-white';
+                name.textContent = candidate.name;
+                const meta = document.createElement('span');
+                meta.className = 'block truncate text-xs text-gray-400';
+                meta.textContent = `${candidate.region} · ${candidate.menu || ''} · ${distanceText}`;
+                details.append(name, meta);
+                const right = document.createElement('span');
+                right.className = 'flex shrink-0 flex-col items-end gap-1';
+                const votes = document.createElement('span');
+                votes.className = 'text-xs font-bold text-brand-yellow';
+                votes.textContent = `${candidate.votes.toLocaleString()}표`;
+                const mapLink = document.createElement('a');
+                mapLink.href = getNaverMapUrl(candidate);
+                mapLink.target = '_blank';
+                mapLink.rel = 'noopener noreferrer';
+                mapLink.className = 'text-[10px] font-bold text-[#03C75A] hover:underline';
+                mapLink.textContent = '네이버 지도';
+                right.append(votes, mapLink);
+                row.append(rank, details, right);
+                row.addEventListener('click', event => { if (event.target !== mapLink) marker.openPopup(); });
+                list.appendChild(row);
+            });
+            if (nearbyMap) {
+                nearbyMap.invalidateSize();
+                nearbyMap.fitBounds(L.latLngBounds(bounds), { padding: [24, 24], maxZoom: 15 });
+            }
+        }
+
+        let communitySort = 'latest';
+        let communityCategoryFilter = '전체';
+        let communityPosts = [];
+        let communityLoadToken = 0;
+
+        function populateCommunityRegionOptions() {
+            const regions = ['전체', ...getAvailableRegions()];
+            const filter = document.getElementById('community-region-filter');
+            const composerRegion = document.getElementById('community-region');
+            const selectedFilter = filter.value || '전체';
+            filter.replaceChildren(...regions.map(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                return option;
+            }));
+            filter.value = regions.includes(selectedFilter) ? selectedFilter : '전체';
+            const postRegions = getAvailableRegions();
+            composerRegion.replaceChildren(...postRegions.map(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                return option;
+            }));
+            const defaultRegion = currentRegion === '전체' ? postRegions[0] : currentRegion;
+            composerRegion.value = postRegions.includes(defaultRegion) ? defaultRegion : postRegions[0] || '';
+            renderCommunityCategoryFilters();
+        }
+
+        function renderCommunityCategoryFilters() {
+            const container = document.getElementById('community-category-filters');
+            if (!container) return;
+            const categories = ['전체', '오늘의 먹픽', '내돈내산', '맛집 질문', '혼밥 메이트'];
+            container.replaceChildren(...categories.map(category => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `shrink-0 rounded-full border px-3.5 py-2 text-xs font-bold ${category === communityCategoryFilter ? 'border-brand-orange bg-brand-orange text-white' : 'border-brand-border bg-brand-card text-gray-400 hover:text-white'}`;
+                button.textContent = category === '전체' ? '전체 글' : `#${category}`;
+                button.addEventListener('click', () => {
+                    communityCategoryFilter = category;
+                    renderCommunityCategoryFilters();
+                    renderCommunityFeedCards();
+                });
+                return button;
+            }));
+        }
+
+        function setCommunitySort(sort) {
+            communitySort = sort;
+            document.getElementById('community-sort-latest').className = sort === 'latest' ? 'rounded-lg bg-brand-orange px-3 py-2 text-xs font-bold text-white' : 'rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-bold text-gray-300';
+            document.getElementById('community-sort-hot').className = sort === 'hot' ? 'rounded-lg bg-brand-orange px-3 py-2 text-xs font-bold text-white' : 'rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-xs font-bold text-gray-300';
+            renderCommunityFeedCards();
+        }
+
+        function setCommunityStatus(message, isError = false) {
+            const status = document.getElementById('community-status');
+            status.textContent = message;
+            status.classList.toggle('hidden', !message);
+            status.classList.toggle('text-red-300', isError);
+            status.classList.toggle('text-gray-400', !isError);
+        }
+
+        async function loadCommunityFeed() {
+            const feed = document.getElementById('community-feed');
+            if (!feed) return;
+            const loadToken = ++communityLoadToken;
+            populateCommunityRegionOptions();
+            if (!supabaseClient) {
+                communityPosts = [];
+                setCommunityStatus('커뮤니티 연결 설정을 확인해 주세요.', true);
+                renderCommunityFeedCards();
+                return;
+            }
+            setCommunityStatus('새 글을 불러오는 중…');
+            let query = supabaseClient.from('community_posts')
+                .select('id,user_id,author_name,region,category,restaurant_name,title,content,created_at')
+                .order('created_at', { ascending: false }).limit(80);
+            const region = document.getElementById('community-region-filter').value || '전체';
+            if (region !== '전체') query = query.eq('region', region);
+            const { data, error } = await query;
+            if (loadToken !== communityLoadToken) return;
+            if (error) {
+                console.error('Failed to load community posts', error);
+                communityPosts = [];
+                setCommunityStatus('커뮤니티 테이블이 아직 준비되지 않았습니다. Supabase SQL 설정을 적용해 주세요.', true);
+                renderCommunityFeedCards();
+                return;
+            }
+            communityPosts = data || [];
+            if (communityPosts.length) {
+                const ids = communityPosts.map(post => post.id);
+                const [reactionResult, commentResult] = await Promise.all([
+                    supabaseClient.from('community_reactions').select('post_id,user_id,reaction').in('post_id', ids),
+                    supabaseClient.from('community_comments').select('post_id').in('post_id', ids)
+                ]);
+                if (loadToken !== communityLoadToken) return;
+                if (reactionResult.error) console.error('Failed to load community reactions', reactionResult.error);
+                if (commentResult.error) console.error('Failed to load community comments', commentResult.error);
+                const reactionsByPost = new Map();
+                (reactionResult.data || []).forEach(reaction => {
+                    if (!reactionsByPost.has(reaction.post_id)) reactionsByPost.set(reaction.post_id, []);
+                    reactionsByPost.get(reaction.post_id).push(reaction);
+                });
+                const commentsByPost = new Map();
+                (commentResult.data || []).forEach(comment => commentsByPost.set(comment.post_id, (commentsByPost.get(comment.post_id) || 0) + 1));
+                communityPosts = communityPosts.map(post => ({ ...post, reactions: reactionsByPost.get(post.id) || [], commentCount: commentsByPost.get(post.id) || 0 }));
+            }
+            setCommunityStatus(communityPosts.length ? '' : '아직 글이 없어요. 첫 먹픽을 남겨보세요!');
+            renderCommunityFeedCards();
+        }
+
+        function renderCommunityFeedCards() {
+            const feed = document.getElementById('community-feed');
+            if (!feed) return;
+            feed.replaceChildren();
+            let posts = communityPosts.filter(post => communityCategoryFilter === '전체' || post.category === communityCategoryFilter);
+            if (communitySort === 'hot') {
+                posts = [...posts].sort((a, b) => {
+                    const score = post => (post.reactions || []).filter(reaction => reaction.reaction === 'yum').length * 2 + (post.reactions || []).filter(reaction => reaction.reaction === 'save').length + (post.commentCount || 0) * 2;
+                    return score(b) - score(a) || new Date(b.created_at) - new Date(a.created_at);
+                });
+            }
+            if (!posts.length) {
+                const empty = document.createElement('div');
+                empty.className = 'rounded-2xl border border-brand-border bg-brand-card p-7 text-center text-sm text-gray-500';
+                empty.textContent = communityPosts.length ? '이 종류의 글은 아직 없어요.' : '첫 번째 글을 기다리고 있어요.';
+                feed.appendChild(empty);
+                return;
+            }
+            posts.forEach(post => feed.appendChild(createCommunityPostCard(post)));
+        }
+
+        function formatCommunityTime(value) {
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function createCommunityPostCard(post) {
+            const reactions = post.reactions || [];
+            const yums = reactions.filter(reaction => reaction.reaction === 'yum');
+            const saves = reactions.filter(reaction => reaction.reaction === 'save');
+            const userId = getCurrentUserId();
+            const card = document.createElement('article');
+            card.id = `community-post-${post.id}`;
+            card.className = 'rounded-2xl border border-brand-border bg-brand-card p-4 sm:p-5';
+            const header = document.createElement('div');
+            header.className = 'flex items-start justify-between gap-3';
+            const authorLine = document.createElement('div');
+            authorLine.className = 'flex min-w-0 items-center gap-2';
+            const avatar = document.createElement('span');
+            avatar.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange/15 text-base';
+            avatar.textContent = post.category === '혼밥 메이트' ? '🍚' : post.category === '맛집 질문' ? '🙋' : '🍜';
+            const author = document.createElement('div');
+            author.className = 'min-w-0';
+            const authorName = document.createElement('p');
+            authorName.className = 'truncate text-xs font-bold text-white';
+            authorName.textContent = post.author_name;
+            const meta = document.createElement('p');
+            meta.className = 'mt-0.5 text-[10px] text-gray-500';
+            meta.textContent = `${post.region} · ${formatCommunityTime(post.created_at)}`;
+            author.append(authorName, meta);
+            authorLine.append(avatar, author);
+            const category = document.createElement('span');
+            category.className = 'shrink-0 rounded-full bg-brand-orange/10 px-2.5 py-1 text-[10px] font-bold text-brand-orange';
+            category.textContent = `#${post.category}`;
+            header.append(authorLine, category);
+
+            const title = document.createElement('h2');
+            title.className = 'mt-4 text-base font-black text-white';
+            title.textContent = post.title;
+            card.append(header, title);
+            if (post.restaurant_name) {
+                const restaurant = document.createElement('p');
+                restaurant.className = 'mt-1 text-xs font-bold text-brand-neon';
+                restaurant.textContent = `📍 ${post.restaurant_name}`;
+                card.appendChild(restaurant);
+            }
+            const body = document.createElement('p');
+            body.className = 'mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-300';
+            body.textContent = post.content;
+            card.appendChild(body);
+
+            const actions = document.createElement('div');
+            actions.className = 'mt-4 flex flex-wrap items-center gap-2 border-t border-brand-border pt-3';
+            const yumButton = document.createElement('button');
+            yumButton.type = 'button';
+            yumButton.className = `rounded-full border px-3 py-1.5 text-xs font-bold ${yums.some(reaction => reaction.user_id === userId) ? 'border-brand-orange bg-brand-orange/15 text-brand-orange' : 'border-brand-border text-gray-400 hover:text-white'}`;
+            yumButton.textContent = `🤤 맛잘알 ${yums.length}`;
+            yumButton.addEventListener('click', () => toggleCommunityReaction(post, 'yum'));
+            const saveButton = document.createElement('button');
+            saveButton.type = 'button';
+            saveButton.className = `rounded-full border px-3 py-1.5 text-xs font-bold ${saves.some(reaction => reaction.user_id === userId) ? 'border-brand-yellow bg-brand-yellow/10 text-brand-yellow' : 'border-brand-border text-gray-400 hover:text-white'}`;
+            saveButton.textContent = `🔖 저장 ${saves.length}`;
+            saveButton.addEventListener('click', () => toggleCommunityReaction(post, 'save'));
+            const commentsButton = document.createElement('button');
+            commentsButton.type = 'button';
+            commentsButton.className = 'rounded-full border border-brand-border px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white';
+            commentsButton.textContent = `💬 댓글 ${post.commentCount || 0}`;
+            const commentsArea = document.createElement('div');
+            commentsArea.className = 'mt-3 hidden border-t border-brand-border pt-3';
+            commentsButton.addEventListener('click', async () => {
+                const opening = commentsArea.classList.contains('hidden');
+                commentsArea.classList.toggle('hidden');
+                if (opening) await renderCommunityComments(post.id, commentsArea);
+            });
+            actions.append(yumButton, saveButton, commentsButton);
+            if (post.user_id === userId) {
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'ml-auto rounded-full px-3 py-1.5 text-xs text-gray-500 hover:text-red-300';
+                deleteButton.textContent = '삭제';
+                deleteButton.addEventListener('click', () => deleteCommunityPost(post.id));
+                actions.appendChild(deleteButton);
+            }
+            card.append(actions, commentsArea);
+            return card;
+        }
+
+        function getCommunityAuthorName() {
+            const accountKey = `FOOD_COMMUNITY_NICKNAME_${supabaseSessionUserId || 'guest'}`;
+            const savedName = localStorage.getItem(accountKey);
+            if (savedName) return savedName.slice(0, 20);
+            return '익명 먹러';
+        }
+
+        function toggleCommunityComposer(forceOpen) {
+            if (!AuthService.getUser() || !supabaseSessionUserId) {
+                showToast('글을 쓰려면 먼저 로그인해 주세요.');
+                openLoginModal();
+                return;
+            }
+            const form = document.getElementById('community-composer');
+            const shouldOpen = forceOpen === undefined ? form.classList.contains('hidden') : forceOpen;
+            form.classList.toggle('hidden', !shouldOpen);
+            if (shouldOpen) {
+                populateCommunityRegionOptions();
+                document.getElementById('community-author').value = getCommunityAuthorName();
+                document.getElementById('community-title').focus();
+            }
+        }
+
+        async function submitCommunityPost(event) {
+            event.preventDefault();
+            if (!supabaseClient || !supabaseSessionUserId) {
+                showToast('글을 올리려면 먼저 로그인해 주세요.');
+                openLoginModal();
+                return;
+            }
+            const authorName = document.getElementById('community-author').value.trim().slice(0, 20);
+            const post = {
+                user_id: supabaseSessionUserId,
+                author_name: authorName,
+                region: document.getElementById('community-region').value,
+                category: document.getElementById('community-category').value,
+                restaurant_name: document.getElementById('community-restaurant').value.trim() || null,
+                title: document.getElementById('community-title').value.trim(),
+                content: document.getElementById('community-content').value.trim()
+            };
+            const { error } = await supabaseClient.from('community_posts').insert(post);
+            if (error) {
+                console.error('Failed to create community post', error);
+                showToast(`글 등록에 실패했습니다: ${error.message}`);
+                return;
+            }
+            localStorage.setItem(`FOOD_COMMUNITY_NICKNAME_${supabaseSessionUserId}`, authorName);
+            document.getElementById('community-title').value = '';
+            document.getElementById('community-restaurant').value = '';
+            document.getElementById('community-content').value = '';
+            toggleCommunityComposer(false);
+            const filter = document.getElementById('community-region-filter');
+            filter.value = post.region;
+            communityCategoryFilter = '전체';
+            await loadCommunityFeed();
+            showToast('새 글을 올렸어요!');
+        }
+
+        async function toggleCommunityReaction(post, reaction) {
+            if (!supabaseClient || !supabaseSessionUserId) {
+                showToast('반응을 남기려면 먼저 로그인해 주세요.');
+                openLoginModal();
+                return;
+            }
+            const alreadyReacted = (post.reactions || []).some(item => item.user_id === supabaseSessionUserId && item.reaction === reaction);
+            const result = alreadyReacted
+                ? await supabaseClient.from('community_reactions').delete().eq('post_id', post.id).eq('user_id', supabaseSessionUserId).eq('reaction', reaction)
+                : await supabaseClient.from('community_reactions').insert({ post_id: post.id, user_id: supabaseSessionUserId, reaction });
+            if (result.error) {
+                showToast(`반응 처리에 실패했습니다: ${result.error.message}`);
+                return;
+            }
+            await loadCommunityFeed();
+        }
+
+        async function renderCommunityComments(postId, container) {
+            container.replaceChildren();
+            const { data, error } = await supabaseClient.from('community_comments')
+                .select('id,user_id,author_name,content,created_at').eq('post_id', postId).order('created_at', { ascending: true }).limit(100);
+            if (error) {
+                const message = document.createElement('p');
+                message.className = 'text-xs text-red-300';
+                message.textContent = '댓글을 불러오지 못했습니다.';
+                container.appendChild(message);
+                return;
+            }
+            (data || []).forEach(comment => {
+                const row = document.createElement('div');
+                row.className = 'flex items-start justify-between gap-3 py-2';
+                const text = document.createElement('p');
+                text.className = 'min-w-0 flex-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-gray-300';
+                const author = document.createElement('strong');
+                author.className = 'mr-2 text-white';
+                author.textContent = comment.author_name;
+                text.append(author, document.createTextNode(comment.content));
+                row.appendChild(text);
+                if (comment.user_id === getCurrentUserId()) {
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'shrink-0 text-[10px] text-gray-500 hover:text-red-300';
+                    remove.textContent = '삭제';
+                    remove.addEventListener('click', async () => {
+                        const { error: deleteError } = await supabaseClient.from('community_comments').delete().eq('id', comment.id);
+                        if (deleteError) showToast(`댓글 삭제에 실패했습니다: ${deleteError.message}`);
+                        else { await loadCommunityFeed(); await renderCommunityComments(postId, container); }
+                    });
+                    row.appendChild(remove);
+                }
+                container.appendChild(row);
+            });
+            if (!data?.length) {
+                const empty = document.createElement('p');
+                empty.className = 'py-2 text-xs text-gray-500';
+                empty.textContent = '첫 댓글을 남겨보세요.';
+                container.appendChild(empty);
+            }
+            if (!AuthService.getUser()) {
+                const signInHint = document.createElement('p');
+                signInHint.className = 'mt-2 text-[11px] text-gray-500';
+                signInHint.textContent = '로그인하면 댓글을 쓸 수 있어요.';
+                container.appendChild(signInHint);
+                return;
+            }
+            const form = document.createElement('form');
+            form.className = 'mt-3 flex gap-2';
+            const input = document.createElement('input');
+            input.required = true;
+            input.maxLength = 500;
+            input.placeholder = '댓글을 남겨보세요';
+            input.className = 'min-w-0 flex-1 rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-xs text-white';
+            const submit = document.createElement('button');
+            submit.className = 'shrink-0 rounded-lg bg-brand-border px-3 py-2 text-xs font-bold text-white';
+            submit.textContent = '등록';
+            form.append(input, submit);
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const { error: insertError } = await supabaseClient.from('community_comments').insert({
+                    post_id: postId,
+                    user_id: supabaseSessionUserId,
+                    author_name: getCommunityAuthorName(),
+                    content: input.value.trim()
+                });
+                if (insertError) {
+                    showToast(`댓글 등록에 실패했습니다: ${insertError.message}`);
+                    return;
+                }
+                await loadCommunityFeed();
+                await renderCommunityComments(postId, container);
+            });
+            container.appendChild(form);
+        }
+
+        async function deleteCommunityPost(postId) {
+            if (!window.confirm('이 글을 삭제할까요? 댓글과 반응도 함께 삭제됩니다.')) return;
+            const { error } = await supabaseClient.from('community_posts').delete().eq('id', postId);
+            if (error) {
+                showToast(`글 삭제에 실패했습니다: ${error.message}`);
+                return;
+            }
+            await loadCommunityFeed();
+        }
+
+        async function renderMyPage() {
+            const profile = document.getElementById('mypage-profile');
+            const history = document.getElementById('mypage-vote-history');
+            const countEl = document.getElementById('mypage-vote-count');
+            const actions = document.getElementById('mypage-account-actions');
+            const savedPosts = document.getElementById('mypage-saved-posts');
+            profile.replaceChildren();
+            history.replaceChildren();
+            savedPosts.replaceChildren();
+            const user = AuthService.getUser();
+            if (!user) {
+                actions.classList.add('hidden');
+                const message = document.createElement('p');
+                message.className = 'text-sm text-gray-400';
+                message.textContent = '로그인하면 계정 정보와 오늘의 투표 기록을 확인할 수 있어요.';
+                const login = document.createElement('button');
+                login.className = 'mt-4 rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-bold text-white';
+                login.textContent = '로그인';
+                login.addEventListener('click', openLoginModal);
+                profile.append(message, login);
+                countEl.textContent = '';
+                history.textContent = '로그인 후 투표 기록을 확인할 수 있습니다.';
+                savedPosts.textContent = '로그인하면 저장한 커뮤니티 글을 확인할 수 있어요.';
+                return;
+            }
+            actions.classList.remove('hidden');
+            const identity = document.createElement('div');
+            identity.className = 'flex items-center gap-3';
+            const avatar = document.createElement('span');
+            avatar.className = 'flex h-12 w-12 items-center justify-center rounded-full bg-brand-orange/15 text-brand-orange';
+            avatar.innerHTML = '<i class="fa-solid fa-user"></i>';
+            const email = document.createElement('div');
+            const name = document.createElement('p');
+            name.className = 'font-bold text-white';
+            name.textContent = user.username || '회원';
+            const address = document.createElement('p');
+            address.className = 'text-xs text-gray-400';
+            address.textContent = user.email || '';
+            email.append(name, address);
+            identity.append(avatar, email);
+            profile.appendChild(identity);
+
+            const records = [];
+            const directVotes = voteDashboard.myDirect || {};
+            Object.entries(directVotes).forEach(([tournamentId, candidateId]) => {
+                const tournament = DataService.getTournaments().find(item => String(item.id) === String(tournamentId));
+                const candidate = tournament?.candidates?.find(item => String(item.id) === String(candidateId));
+                if (candidate) records.push({ title: getTournamentDisplayTitle(tournament), place: candidate.name, menu: '', kind: '식당 투표' });
+            });
+            Object.entries(voteDashboard.myMenus || {}).forEach(([key, menus]) => {
+                const [tournamentId, candidateId] = key.split('|');
+                const tournament = DataService.getTournaments().find(item => String(item.id) === String(tournamentId));
+                const candidate = tournament?.candidates?.find(item => String(item.id) === String(candidateId));
+                (menus || []).forEach(menu => {
+                    if (candidate) records.push({ title: getTournamentDisplayTitle(tournament), place: candidate.name, menu, kind: '메뉴 선택' });
+                });
+            });
+            countEl.textContent = `${records.length}건`;
+            if (!records.length) {
+                history.textContent = '오늘 기록된 투표가 없습니다.';
+                history.className = 'space-y-2 text-sm text-gray-500';
+            } else {
+                history.className = 'space-y-2';
+                records.forEach(record => {
+                    const row = document.createElement('div');
+                    row.className = 'flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-border bg-brand-dark p-3';
+                    const description = document.createElement('span');
+                    description.className = 'text-sm text-white';
+                    description.textContent = `${record.place}${record.menu ? ` · ${record.menu}` : ''}`;
+                    const type = document.createElement('span');
+                    type.className = 'text-[11px] text-gray-500';
+                    type.textContent = `${record.title} · ${record.kind}`;
+                    row.append(description, type);
+                    history.appendChild(row);
+                });
+            }
+
+            const { data: savedRows, error: savedError } = await supabaseClient.from('community_reactions')
+                .select('post_id,community_posts(id,title,author_name,region,category,created_at)')
+                .eq('user_id', supabaseSessionUserId).eq('reaction', 'save').order('created_at', { ascending: false });
+            if (savedError) {
+                savedPosts.textContent = '저장한 글을 불러오지 못했습니다.';
+                return;
+            }
+            const saved = (savedRows || []).map(row => row.community_posts).filter(Boolean);
+            if (!saved.length) {
+                savedPosts.textContent = '아직 저장한 글이 없습니다.';
+                savedPosts.className = 'space-y-2 text-sm text-gray-500';
+                return;
+            }
+            savedPosts.className = 'space-y-2';
+            saved.forEach(post => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'flex w-full items-center justify-between gap-3 rounded-xl border border-brand-border bg-brand-dark p-3 text-left hover:border-brand-yellow';
+                const title = document.createElement('span');
+                title.className = 'min-w-0 truncate text-sm font-bold text-white';
+                title.textContent = post.title;
+                const meta = document.createElement('span');
+                meta.className = 'shrink-0 text-[10px] text-gray-500';
+                meta.textContent = `${post.region} · #${post.category}`;
+                button.append(title, meta);
+                button.addEventListener('click', async () => {
+                    showView('community');
+                    document.getElementById('community-region-filter').value = post.region;
+                    await loadCommunityFeed();
+                    document.getElementById(`community-post-${post.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                savedPosts.appendChild(button);
+            });
         }
 
         function switchToUserView() {
@@ -1639,13 +2541,224 @@
             showToast(`'${region}' 지역을 추가했습니다.`);
         }
 
-        function getActiveRegions() { return getAvailableRegions(); }
+        function getActiveRegions() { return ['전체', ...getAvailableRegions()]; }
 
         function setCurrentRegion(region) {
             currentRegion = region;
-            localStorage.setItem("FOOD_CURRENT_REGION", region);
+            localStorage.setItem("FOOD_CURRENT_REGION_V2", region);
             renderHomeCategories();
             renderTierlist();
+            populateSearchRegionSelect();
+            const searchModalOpen = !document.getElementById('modal-food-search').classList.contains('hidden');
+            const query = document.getElementById('food-search-input').value.trim();
+            if (searchModalOpen && query) searchFood(null, false);
+            loadFoodSearchHighlights();
+        }
+
+        function getSearchableCandidates() {
+            return DataService.getTournaments().filter(t => t.active !== false && (currentRegion === '전체' || getTournamentRegion(t) === currentRegion))
+                .flatMap(t => (t.candidates || []).map(candidate => ({ ...candidate, tournamentId: String(t.id), tournament: t, region: getTournamentRegion(t) })));
+        }
+
+        function openFoodSearch() {
+            const modal = document.getElementById('modal-food-search');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            populateSearchRegionSelect();
+            loadFoodSearchHighlights();
+            document.getElementById('food-search-input').focus();
+        }
+
+        function closeFoodSearch() {
+            const modal = document.getElementById('modal-food-search');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            const activeView = document.querySelector('main section:not(.hidden)')?.id || 'view-home';
+            setBottomNavActive(activeView.replace('view-', '') === 'game' || activeView.replace('view-', '') === 'result' ? 'home' : activeView.replace('view-', ''));
+        }
+
+        function populateSearchRegionSelect() {
+            const regionSelect = document.getElementById('search-region-select');
+            if (!regionSelect) return;
+            const regions = ['전체', ...getAvailableRegions()];
+            regionSelect.replaceChildren(...regions.map(region => {
+                const option = document.createElement('option');
+                option.value = region;
+                option.textContent = region;
+                return option;
+            }));
+            regionSelect.value = regions.includes(currentRegion) ? currentRegion : '전체';
+        }
+
+        async function loadFoodSearchHighlights() {
+            populateSearchRegionSelect();
+            if (supabaseClient) await StatsService.refresh();
+            const termsEl = document.getElementById('popular-search-terms');
+            if (!supabaseClient) {
+                termsEl.innerHTML = '<li class="text-xs text-gray-500">검색 통계를 사용할 수 없습니다.</li>';
+                return;
+            }
+            const { data, error } = await supabaseClient.rpc('get_menu_search_trends', { p_region: currentRegion });
+            if (error) {
+                console.error('Failed to load menu search trends', error);
+                termsEl.innerHTML = '<li class="text-xs text-gray-500">Supabase SQL 설정을 적용해 주세요.</li>';
+                document.getElementById('menu-winner').textContent = '검색 통계를 불러오지 못했습니다.';
+                return;
+            }
+            const trends = data || [];
+            termsEl.replaceChildren();
+            if (!trends.length) {
+                const empty = document.createElement('li');
+                empty.className = 'text-xs text-gray-500';
+                empty.textContent = '아직 검색 기록이 없습니다.';
+                termsEl.appendChild(empty);
+                selectedPopularSearchTerm = null;
+                document.getElementById('selected-search-menu').textContent = '검색어가 쌓이면 메뉴별 1위 음식을 표시합니다.';
+                document.getElementById('menu-winner').textContent = '아직 인기 검색 메뉴가 없습니다.';
+                return;
+            }
+            if (!trends.some(item => item.search_term === selectedPopularSearchTerm)) selectedPopularSearchTerm = trends[0].search_term;
+            trends.forEach((item, index) => {
+                const row = document.createElement('li');
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition ${item.search_term === selectedPopularSearchTerm ? 'border-brand-orange bg-brand-orange/10 text-white' : 'border-brand-border bg-brand-card text-gray-300 hover:border-brand-orange/60'}`;
+                const rank = document.createElement('span');
+                rank.className = 'w-6 shrink-0 text-center text-sm font-black text-brand-orange';
+                rank.textContent = String(index + 1).padStart(2, '0');
+                const term = document.createElement('span');
+                term.className = 'min-w-0 flex-1 truncate text-sm font-bold';
+                term.textContent = item.search_term;
+                const count = document.createElement('span');
+                count.className = 'shrink-0 text-[11px] text-gray-500';
+                count.textContent = `${Number(item.search_count).toLocaleString()}회`;
+                button.append(rank, term, count);
+                button.addEventListener('click', () => {
+                    selectedPopularSearchTerm = item.search_term;
+                    loadFoodSearchHighlights();
+                });
+                row.appendChild(button);
+                termsEl.appendChild(row);
+            });
+            renderMenuWinner(selectedPopularSearchTerm);
+        }
+
+        function renderMenuWinner(searchTerm) {
+            const heading = document.getElementById('selected-search-menu');
+            const winnerContainer = document.getElementById('menu-winner');
+            heading.textContent = searchTerm ? `“${searchTerm}” 메뉴 기준 · ${currentRegion}` : '인기 메뉴를 선택해 주세요.';
+            winnerContainer.replaceChildren();
+            if (!searchTerm) return;
+
+            const normalizedTerm = searchTerm.trim().toLocaleLowerCase('ko');
+            const matching = getSearchableCandidates().flatMap(candidate =>
+                getMenuChoices(candidate).filter(menu => menu.toLocaleLowerCase('ko').includes(normalizedTerm))
+                    .map(menu => ({ candidate, menu, menuVotes: StatsService.getMenuVoteCount(candidate.tournamentId, candidate.id, menu), foodVotes: getCandidateVotes(candidate) }))
+            );
+            matching.sort((a, b) => b.menuVotes - a.menuVotes || b.foodVotes - a.foodVotes);
+            const winner = matching[0];
+            if (!winner) {
+                winnerContainer.textContent = '이 검색어와 일치하는 등록 메뉴가 없습니다.';
+                winnerContainer.className = 'mt-4 rounded-lg border border-brand-border bg-brand-card p-4 text-sm text-gray-400';
+                return;
+            }
+            const card = document.createElement('article');
+            card.className = 'overflow-hidden rounded-xl border border-brand-border bg-brand-card';
+            const img = document.createElement('img');
+            img.src = winner.candidate.img || IMAGE_PRESETS.korean;
+            img.alt = winner.candidate.name;
+            img.className = 'h-40 w-full object-cover sm:h-56';
+            const details = document.createElement('div');
+            details.className = 'space-y-2 p-4';
+            const badge = document.createElement('span');
+            badge.className = 'inline-flex rounded-full bg-brand-yellow/15 px-2.5 py-1 text-[11px] font-black text-brand-yellow';
+            badge.textContent = '메뉴 1위 음식';
+            const name = document.createElement('h4');
+            name.className = 'text-lg font-black text-white';
+            name.textContent = winner.candidate.name;
+            const menu = document.createElement('p');
+            menu.className = 'text-sm text-brand-orange';
+            menu.textContent = winner.menu;
+            const score = document.createElement('p');
+            score.className = 'text-xs text-gray-400';
+            score.textContent = winner.menuVotes > 0 ? `${winner.menuVotes.toLocaleString()}회 메뉴 선택 · ${winner.candidate.region}` : `${winner.foodVotes.toLocaleString()}표 식당 투표 · ${winner.candidate.region}`;
+            const open = document.createElement('button');
+            open.type = 'button';
+            open.className = 'mt-2 w-full rounded-lg bg-brand-orange px-3 py-2 text-xs font-bold text-white hover:bg-brand-orange/90';
+            open.textContent = '이 음식 투표 보기';
+            open.addEventListener('click', () => { closeFoodSearch(); startTournament(winner.candidate.tournamentId); });
+            details.append(badge, name, menu, score, open);
+            card.append(img, details);
+            winnerContainer.appendChild(card);
+        }
+
+        function escapeHTML(value) {
+            return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        }
+
+        function usePopularSearch(term) {
+            document.getElementById('food-search-input').value = term;
+            searchFood(new Event('submit', { cancelable: true }));
+        }
+
+        function handleFoodSearchInput() {
+            searchFood(null, false);
+        }
+
+        async function searchFood(event, recordSearch = true) {
+            event?.preventDefault?.();
+            const renderToken = ++foodSearchRenderToken;
+            const input = document.getElementById('food-search-input');
+            const query = input.value.trim();
+            const results = document.getElementById('food-search-results');
+            const message = document.getElementById('food-search-message');
+            results.classList.remove('hidden');
+            message.classList.add('hidden');
+            if (!query) {
+                results.replaceChildren();
+                results.classList.add('hidden');
+                return;
+            }
+            if (recordSearch && supabaseClient) {
+                const { error } = await supabaseClient.rpc('record_menu_search', { p_search_term: query, p_region: currentRegion });
+                if (error) console.error('Could not record search', error);
+            }
+            if (renderToken !== foodSearchRenderToken) return;
+            const normalized = query.toLocaleLowerCase('ko');
+            const matches = getSearchableCandidates().filter(candidate => `${candidate.name} ${candidate.menu || ''} ${candidate.desc || ''}`.toLocaleLowerCase('ko').includes(normalized)).slice(0, 12);
+            results.replaceChildren();
+            if (matches.length) {
+                const heading = document.createElement('p');
+                heading.className = 'text-xs font-bold text-gray-300';
+                heading.textContent = '검색 결과';
+                results.appendChild(heading);
+                matches.forEach(candidate => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'flex w-full items-center justify-between gap-3 rounded-xl border border-brand-border bg-brand-dark p-3 text-left hover:border-brand-orange';
+                    const details = document.createElement('span');
+                    details.className = 'min-w-0';
+                    const name = document.createElement('strong');
+                    name.className = 'block truncate text-sm text-white';
+                    name.textContent = candidate.name;
+                    const meta = document.createElement('span');
+                    meta.className = 'block truncate text-xs text-gray-400';
+                    meta.textContent = `${candidate.menu || ''} · ${candidate.region}`;
+                    details.append(name, meta);
+                    const votes = document.createElement('span');
+                    votes.className = 'shrink-0 text-xs font-bold text-brand-yellow';
+                    votes.textContent = `${getCandidateVotes(candidate).toLocaleString()}표`;
+                    button.append(details, votes);
+                    button.addEventListener('click', () => { closeFoodSearch(); startTournament(candidate.tournamentId); });
+                    results.appendChild(button);
+                });
+            } else {
+                const empty = document.createElement('p');
+                empty.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-center text-xs text-gray-400';
+                empty.textContent = '검색 결과가 없습니다.';
+                results.appendChild(empty);
+            }
+            if (recordSearch) await loadFoodSearchHighlights();
         }
 
         function renderRegionFilters(containerId) {
@@ -1653,7 +2766,7 @@
             if (!container) return;
             container.innerHTML = "";
             const regions = getActiveRegions();
-            if (!regions.includes(currentRegion)) currentRegion = regions[0];
+            if (!regions.includes(currentRegion)) currentRegion = '전체';
             regions.forEach(region => {
                 const button = document.createElement("button");
                 const selected = region === currentRegion;
@@ -1671,8 +2784,13 @@
             const container = document.getElementById('category-cards-container');
             const allTournaments = DataService.getTournaments().filter(t => t.active !== false);
             const regions = getAvailableRegions();
-            if (regions.length && !regions.includes(currentRegion)) currentRegion = regions[0];
-            localStorage.setItem("FOOD_CURRENT_REGION", currentRegion);
+            if (currentRegion !== '전체' && regions.length && !regions.includes(currentRegion)) currentRegion = '전체';
+            localStorage.setItem("FOOD_CURRENT_REGION_V2", currentRegion);
+            const regionSelect = document.getElementById('home-region-select');
+            if (regionSelect) {
+                regionSelect.innerHTML = `<option value="전체">전체</option>${regions.map(region => `<option value="${region}">${region}</option>`).join('')}`;
+                regionSelect.value = currentRegion;
+            }
             renderRegionFilters("home-region-filters");
             document.getElementById("home-region-title").innerText = currentRegion;
             document.getElementById("home-region-badge").innerText = currentRegion;
@@ -1682,7 +2800,7 @@
             document.getElementById("notice-region-title").innerText = currentRegion;
             document.getElementById("tier-region-title").innerText = currentRegion;
             document.getElementById("active-region-caption").innerText = `${currentRegion}에서 지금 참여 가능한 투표`;
-            const tournaments = allTournaments.filter(t => getTournamentRegion(t) === currentRegion);
+            const tournaments = currentRegion === '전체' ? allTournaments : allTournaments.filter(t => getTournamentRegion(t) === currentRegion);
             container.innerHTML = '';
 
             if (tournaments.length === 0) {
@@ -1869,7 +2987,7 @@
         function populateCategoryFilterButtons() {
             const container = document.getElementById('tier-category-buttons');
             container.innerHTML = '';
-            const tournaments = DataService.getTournaments().filter(t => t.active !== false && getTournamentRegion(t) === currentRegion);
+            const tournaments = DataService.getTournaments().filter(t => t.active !== false && (currentRegion === '전체' || getTournamentRegion(t) === currentRegion));
 
             if (tournaments.length === 0) return;
 
@@ -1897,7 +3015,7 @@
             const container = document.getElementById('tierlist-cards-container');
             container.innerHTML = '';
             renderRegionFilters('tier-region-filters');
-            const tournaments = DataService.getTournaments().filter(t => t.active !== false && getTournamentRegion(t) === currentRegion);
+            const tournaments = DataService.getTournaments().filter(t => t.active !== false && (currentRegion === '전체' || getTournamentRegion(t) === currentRegion));
 
             if (tournaments.length === 0) {
                 container.innerHTML = `<div class="p-8 text-center text-gray-500 text-xs">${currentRegion} 지역에 공개된 투표가 없습니다.</div>`;
@@ -2530,12 +3648,15 @@
 
         function openAddCandidateModal() {
             const filterSelect = document.getElementById('admin-candidate-filter-select');
+            document.getElementById('candidate-location-picker').classList.add('hidden');
             document.getElementById('modal-candidate-title').innerText = '신규 맛집 등록';
             document.getElementById('input-candidate-id').value = '';
             document.getElementById('input-candidate-tournament').value = filterSelect.value;
             document.getElementById('input-candidate-name').value = '';
             document.getElementById('input-candidate-menu').value = '';
             document.getElementById('input-candidate-naver').value = '';
+            document.getElementById('input-candidate-latitude').value = '';
+            document.getElementById('input-candidate-longitude').value = '';
             document.getElementById('input-candidate-desc').value = '';
             document.getElementById('input-candidate-img').value = IMAGE_PRESETS.korean;
             previewCandidateImage(IMAGE_PRESETS.korean);
@@ -2549,12 +3670,15 @@
             const candidate = (tourney.candidates || []).find(c => c.id === candidateId);
             if (!candidate) return;
 
+            document.getElementById('candidate-location-picker').classList.add('hidden');
             document.getElementById('modal-candidate-title').innerText = '맛집 정보 수정';
             document.getElementById('input-candidate-id').value = candidate.id;
             document.getElementById('input-candidate-tournament').value = tourneyId;
             document.getElementById('input-candidate-name').value = candidate.name;
             document.getElementById('input-candidate-menu').value = candidate.menu;
             document.getElementById('input-candidate-naver').value = candidate.naverUrl || getNaverMapUrl(candidate);
+            document.getElementById('input-candidate-latitude').value = candidate.latitude ?? '';
+            document.getElementById('input-candidate-longitude').value = candidate.longitude ?? '';
             document.getElementById('input-candidate-desc').value = candidate.desc;
             document.getElementById('input-candidate-img').value = candidate.img || '';
             previewCandidateImage(candidate.img || '');
@@ -2564,6 +3688,50 @@
 
         function closeCandidateModal() {
             document.getElementById('modal-candidate').classList.add('hidden');
+        }
+
+        let candidatePickerMap = null;
+        let candidatePickerMarker = null;
+
+        function toggleCandidateLocationPicker() {
+            const picker = document.getElementById('candidate-location-picker');
+            picker.classList.toggle('hidden');
+            if (picker.classList.contains('hidden')) return;
+            if (!window.L) {
+                showToast('지도를 불러오지 못했습니다.');
+                return;
+            }
+            const latValue = document.getElementById('input-candidate-latitude').value.trim();
+            const lngValue = document.getElementById('input-candidate-longitude').value.trim();
+            const lat = Number(latValue);
+            const lng = Number(lngValue);
+            const hasCoordinates = Boolean(latValue && lngValue) && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+            if (!candidatePickerMap) {
+                candidatePickerMap = L.map('candidate-picker-map').setView(hasCoordinates ? [lat, lng] : [37.5665, 126.9780], hasCoordinates ? 16 : 12);
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+                }).addTo(candidatePickerMap);
+                candidatePickerMap.on('click', event => {
+                    const pickedLat = event.latlng.lat;
+                    const pickedLng = event.latlng.lng;
+                    document.getElementById('input-candidate-latitude').value = pickedLat.toFixed(6);
+                    document.getElementById('input-candidate-longitude').value = pickedLng.toFixed(6);
+                    if (candidatePickerMarker) candidatePickerMarker.setLatLng(event.latlng);
+                    else candidatePickerMarker = L.marker(event.latlng).addTo(candidatePickerMap);
+                });
+            }
+            setTimeout(() => {
+                candidatePickerMap.invalidateSize();
+                if (hasCoordinates) {
+                    candidatePickerMap.setView([lat, lng], 16);
+                    if (candidatePickerMarker) candidatePickerMarker.setLatLng([lat, lng]);
+                    else candidatePickerMarker = L.marker([lat, lng]).addTo(candidatePickerMap);
+                } else if (candidatePickerMarker) {
+                    candidatePickerMap.removeLayer(candidatePickerMarker);
+                    candidatePickerMarker = null;
+                }
+            }, 0);
         }
 
         function handleCandidateNameChange(name) {
@@ -2612,6 +3780,18 @@
             const naverUrl = document.getElementById('input-candidate-naver').value.trim() || `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
             const desc = document.getElementById('input-candidate-desc').value.trim();
             const img = document.getElementById('input-candidate-img').value.trim();
+            const latitudeValue = document.getElementById('input-candidate-latitude').value.trim();
+            const longitudeValue = document.getElementById('input-candidate-longitude').value.trim();
+            if (Boolean(latitudeValue) !== Boolean(longitudeValue)) {
+                showToast('지도 위치를 등록하려면 위도와 경도를 모두 입력해 주세요.');
+                return;
+            }
+            const latitude = latitudeValue ? Number(latitudeValue) : null;
+            const longitude = longitudeValue ? Number(longitudeValue) : null;
+            if (latitudeValue && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180)) {
+                showToast('위도 또는 경도 값이 올바르지 않습니다.');
+                return;
+            }
 
             const candidateData = {
                 id: idVal ? Number(idVal) : null,
@@ -2619,7 +3799,9 @@
                 menu: menu,
                 naverUrl: naverUrl,
                 desc: desc,
-                img: img
+                img: img,
+                latitude,
+                longitude
             };
 
             if (!await DataService.saveCandidate(tourneyId, candidateData)) return;
@@ -2780,6 +3962,61 @@
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = supabaseAuthMode === 'signup' ? '회원가입' : '로그인';
+            }
+        }
+
+        function openAccountDeletionModal() {
+            const modal = document.getElementById('modal-account-deletion');
+            const checkbox = document.getElementById('account-deletion-confirm');
+            const submit = document.getElementById('account-deletion-submit');
+            const error = document.getElementById('account-deletion-error');
+            checkbox.checked = false;
+            submit.disabled = true;
+            error.textContent = '';
+            error.classList.add('hidden');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeAccountDeletionModal() {
+            const modal = document.getElementById('modal-account-deletion');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('account-deletion-confirm').addEventListener('change', (event) => {
+            document.getElementById('account-deletion-submit').disabled = !event.target.checked;
+        });
+
+        async function deleteMyAccount() {
+            if (!supabaseClient || !AuthService.getUser()) {
+                showToast('로그인 후 이용해 주세요.');
+                return;
+            }
+            if (!document.getElementById('account-deletion-confirm').checked) return;
+            const submit = document.getElementById('account-deletion-submit');
+            const errorMessage = document.getElementById('account-deletion-error');
+            submit.disabled = true;
+            submit.textContent = '삭제 중…';
+            errorMessage.textContent = '';
+            errorMessage.classList.add('hidden');
+
+            try {
+                const { error } = await supabaseClient.rpc('delete_my_account');
+                if (error) throw error;
+                await supabaseClient.auth.signOut();
+                supabaseAdminVerified = false;
+                supabaseSessionUserId = null;
+                AuthService.setUser(null);
+                closeAccountDeletionModal();
+                switchToUserView();
+                showToast('회원 탈퇴가 완료되었습니다.');
+            } catch (error) {
+                console.error('Account deletion failed:', error);
+                errorMessage.textContent = error.message || '회원 탈퇴에 실패했습니다. Supabase SQL 설정을 확인해 주세요.';
+                errorMessage.classList.remove('hidden');
+                submit.disabled = !document.getElementById('account-deletion-confirm').checked;
+                submit.textContent = '계정과 투표 기록 삭제';
             }
         }
 
