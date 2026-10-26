@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>문의하기 | f.rank.</title>
+  <meta name="description" content="f.rank. 서비스와 등록된 식당 정보에 대해 문의하거나 정정을 요청할 수 있습니다.">
+  <meta name="robots" content="index,follow">
+  <style>
+    :root { color-scheme: dark; font-family: "Noto Sans KR", system-ui, sans-serif; background: #0f0f12; color: #f3f4f6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; line-height: 1.65; }
+    header, main, footer { width: min(100% - 32px, 760px); margin-inline: auto; }
+    header { padding: 24px 0; border-bottom: 1px solid #2a2a32; }
+    main { padding: 34px 0 56px; }
+    footer { padding: 20px 0 32px; border-top: 1px solid #2a2a32; color: #9ca3af; font-size: .9rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 16px; }
+    nav a { color: #ff8a55; font-weight: 700; text-decoration: none; }
+    h1 { font-size: clamp(2rem, 7vw, 3rem); line-height: 1.25; margin: 10px 0; }
+    p, label { color: #c5c6cc; }
+    .eyebrow { color: #ff8a55; font-weight: 700; font-size: .85rem; }
+    .panel { background: #18181c; border: 1px solid #2a2a32; border-radius: 18px; padding: clamp(18px, 5vw, 28px); }
+    form { display: grid; gap: 18px; margin-top: 24px; }
+    label { display: grid; gap: 7px; font-weight: 700; font-size: .92rem; }
+    input, select, textarea { width: 100%; border: 1px solid #3b3b45; border-radius: 10px; background: #0f0f12; color: #f3f4f6; padding: 12px; font: inherit; font-size: 16px; }
+    textarea { min-height: 170px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #ff5e1e; outline-offset: 1px; }
+    .hint, .privacy-copy { color: #9ca3af; font-size: .83rem; }
+    .check { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; }
+    .check input { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 2px; accent-color: #ff5e1e; }
+    button { min-height: 48px; border: 0; border-radius: 11px; background: #ff5e1e; color: white; font: inherit; font-weight: 800; cursor: pointer; padding: 12px 18px; }
+    button:disabled { opacity: .65; cursor: wait; }
+    [data-fs-success], [data-fs-error] { display: none; padding: 12px; border-radius: 10px; }
+    [data-fs-success][data-fs-active], [data-fs-error][data-fs-active] { display: block; }
+    [data-fs-success] { color: #a7f3d0; background: #064e3b; }
+    [data-fs-error] { color: #fecaca; background: #7f1d1d; }
+    [data-fs-error="email"], [data-fs-error="topic"], [data-fs-error="message"] { display: block; padding: 0; background: none; font-size: .82rem; }
+    .field-error { color: #fca5a5; }
+    .field-error:empty { display: none !important; }
+  </style>
+</head>
+<body>
+  <header><nav aria-label="주요 메뉴"><a href="index.html">f.rank.</a><a href="service.html">서비스·집계 기준</a><a href="privacy.html">개인정보처리방침</a><a href="contact.html" aria-current="page">문의하기</a></nav></header>
+  <main>
+    <p class="eyebrow">f.rank. 운영팀</p>
+    <h1>문의하기</h1>
+    <p>서비스 오류, 후보 식당 정보 정정, 개인정보 관련 문의를 보내주세요. 남겨주신 내용은 Formspree를 통해 운영팀에 전달됩니다. 답변이 필요하면 회신 가능한 이메일 주소를 입력해 주세요.</p>
+    <section class="panel" aria-label="문의 양식">
+      <div data-fs-success role="status" aria-live="polite">문의가 접수되었습니다. 확인 후 입력하신 이메일로 회신하겠습니다.</div>
+      <div data-fs-error role="alert" aria-live="assertive">문의 전송에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>
+      <form id="contact-form" action="https://formspree.io/f/xgaavegj" method="POST">
+        <input type="hidden" name="_subject" value="f.rank. 문의">
+        <div aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+          <label>이 입력란은 비워 두세요 <input type="text" name="_gotcha" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <label for="contact-name">이름 <span class="hint">선택</span>
+          <input id="contact-name" type="text" name="name" autocomplete="name" maxlength="80" placeholder="이름 또는 별칭">
+        </label>
+        <label for="contact-email">회신 이메일 <span aria-hidden="true">(필수)</span>
+          <input id="contact-email" type="email" name="email" autocomplete="email" maxlength="254" required data-fs-field>
+          <span class="field-error" data-fs-error="email"></span>
+        </label>
+        <label for="contact-topic">문의 종류 <span aria-hidden="true">(필수)</span>
+          <select id="contact-topic" name="topic" required data-fs-field>
+            <option value="" selected disabled>선택해 주세요</option>
+            <option value="서비스 이용">서비스 이용</option>
+            <option value="식당 정보 정정">식당 정보 정정</option>
+            <option value="개인정보 문의">개인정보 문의</option>
+            <option value="기타">기타</option>
+          </select>
+          <span class="field-error" data-fs-error="topic"></span>
+        </label>
+        <label for="contact-message">문의 내용 <span aria-hidden="true">(필수)</span>
+          <textarea id="contact-message" name="message" required maxlength="5000" data-fs-field placeholder="오류가 발생한 화면이나 정정이 필요한 후보 이름을 적어 주세요."></textarea>
+          <span class="field-error" data-fs-error="message"></span>
+          <span class="hint">비밀번호, 주민등록번호, 결제정보 등 민감한 정보는 입력하지 마세요.</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="privacy_consent" value="동의" required>
+          <span>문의 답변을 위해 입력한 이름(선택), 이메일, 문의 종류와 내용 및 Formspree의 보안용 접속정보가 제출 시 Formspree, Inc.(미국 및 Formspree 운영 국가)에 전송·저장되고 운영팀에 이메일로 전달되는 데 동의합니다. 동의하지 않으면 폼을 보낼 수 없습니다. 자세한 내용은 <a href="privacy.html" style="color:#ff8a55">개인정보처리방침</a>을 확인해 주세요.</span>
+        </label>
+        <button type="submit" data-fs-submit-btn>문의 보내기</button>
+        <p class="privacy-copy">운영팀은 제출 정보를 문의 답변과 필요한 후속 처리에만 사용하며, 광고성 메일 발송이나 마케팅 구독에 이용하지 않습니다.</p>
+      </form>
+    </section>
+  </main>
+  <footer><a href="index.html" style="color:#ff8a55">투표 화면으로 돌아가기</a> · <a href="privacy.html" style="color:#ff8a55">개인정보처리방침</a></footer>
+  <script>
+    window.formspree = window.formspree || function () { (formspree.q = formspree.q || []).push(arguments); };
+    formspree('initForm', { formElement: '#contact-form', formId: 'xgaavegj' });
+  </script>
+  <script src="https://unpkg.com/@formspree/ajax@1" defer></script>
+</body>
+</html>

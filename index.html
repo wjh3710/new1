@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지역 맛집 픽 | 지금 뜨는 실시간 투표</title>
+    <title>f.rank. | 지역 맛집 투표와 랭킹</title>
+    <meta name="description" content="성수와 건대의 맛집 후보를 비교하고, 로그인한 사용자의 식당·메뉴 투표로 지역별 선택 흐름을 확인해 보세요.">
+    <meta name="robots" content="index,follow">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="f.rank. | 지역 맛집 투표와 랭킹">
+    <meta property="og:description" content="지역별 식당 후보와 메뉴를 비교하고 투표 결과를 확인하는 참여형 맛집 서비스입니다.">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -239,19 +244,19 @@
     <header class="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-brand-border px-4 py-3">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2 cursor-pointer" onclick="handleLogoClick()">
-                <div id="brand-logo-icon" class="w-9 h-9 rounded-xl vs-badge flex items-center justify-center font-black text-black text-xl shadow-lg transition-transform hover:scale-105">
-                    👑
+                <div id="brand-logo-icon" aria-label="f.rank. 로고" class="w-9 h-9 rounded-xl vs-badge flex items-center justify-center font-black italic tracking-tighter text-black text-base shadow-lg transition-transform hover:scale-105">
+                    fr
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
                         <span id="brand-title" class="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-brand-yellow">
-                            맛집 픽
+                            f.rank.
                         </span>
                         <span id="header-role-badge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             ADMIN
                         </span>
                     </div>
-                    <span id="brand-subtitle" class="text-xs text-gray-400 block -mt-1 font-medium">LIVE FOOD VOTE · 전국</span>
+                    <span id="brand-subtitle" class="text-xs text-gray-400 block -mt-1 font-medium">FOOD.RANK · PICK FRANK</span>
                 </div>
             </div>
 
@@ -290,15 +295,15 @@
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-card via-brand-dark to-brand-card border border-brand-border p-6 sm:p-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div class="space-y-3 max-w-xl z-10">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/10 border border-brand-orange/30 text-brand-orange text-xs font-bold">
-                        <span class="animate-pulse">🔥</span> 🔥 지금 <span id="home-region-badge">성수</span> 맛집 픽 진행 중
+                        <span class="animate-pulse">🔥</span> <span id="home-region-badge">성수</span> 지역 투표
                     </div>
                     <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
                         오늘 뭐 먹지? 여기서 픽하자.<br>
-                        <span id="home-region-title" class="text-brand-orange">성수</span> 맛집 실시간 투표에 한 표 얹기
+                        <span id="home-region-title" class="text-brand-orange">성수</span> 맛집 투표와 선택 결과
                     </h1>
                     <p class="text-gray-400 text-sm sm:text-base">
-                        고민은 짧게, 픽은 확실하게. 취향 가는 맛집에 바로 투표해요.<br class="hidden sm:block">
-                        사람들이 지금 선택하는 <span id="hero-region-copy">성수</span> 맛집 흐름을 같이 만들어봐요.
+                        frank처럼 솔직하게, 투표 기준과 결과를 투명하게 공개해요.<br class="hidden sm:block">
+                        리뷰 이벤트 보상 대신 로그인 이용자의 선택을 모아 <span id="hero-region-copy">성수</span> 맛집 흐름을 보여드려요.
                     </p>
                 </div>
                 <div class="relative z-10 flex-shrink-0">
@@ -330,9 +335,33 @@
                 <i class="fa-solid fa-circle-info text-brand-orange text-base mt-0.5"></i>
                 <div class="space-y-1">
                     <p class="font-bold text-gray-300">한 표씩 쌓이는 <span id="notice-region-title">성수</span>의 맛 취향</p>
-                    <p>마음에 드는 메뉴를 탭해 투표하세요. 누적 선택 결과는 맛집 랭킹과 티어에 반영됩니다. (현재 투표 데이터는 이 브라우저에 저장돼요.)</p>
+                    <p>식당 투표는 로그인한 계정으로 기록되어 지역별 득표 현황에 반영됩니다. 식당을 고른 뒤에는 그곳에서 먹어본 메뉴도 별도로 선택할 수 있습니다. 브라우저에는 마지막 지역 선택과 로그인 세션 정보가 저장됩니다.</p>
                 </div>
             </div>
+
+            <section class="rounded-2xl border border-brand-border bg-brand-card/60 p-5 sm:p-7 space-y-4" aria-labelledby="how-ranking-works">
+                <div>
+                    <p class="text-xs font-bold text-brand-orange">f.rank. 이용 안내</p>
+                    <h2 id="how-ranking-works" class="mt-1 text-xl font-black text-white">투표 결과를 읽는 방법</h2>
+                    <p class="mt-2 text-sm leading-7 text-gray-300">이 페이지의 순위는 전문가 평가나 현장 검증 결과가 아니라, 로그인한 이용자가 서비스 안에서 남긴 선택을 정리한 것입니다. 후보의 소개 문구와 대표 메뉴는 등록된 정보이므로 방문 전에 지도 링크와 매장 정보를 확인해 주세요.</p>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <article class="rounded-xl border border-brand-border bg-brand-dark p-4">
+                        <h3 class="font-bold text-white">1. 지역과 투표 주제 선택</h3>
+                        <p class="mt-2 text-sm leading-6 text-gray-400">성수 또는 건대 등 지역을 선택하고 한식, 디저트처럼 비교하려는 주제를 고릅니다. 주제마다 후보와 결과가 따로 집계됩니다.</p>
+                    </article>
+                    <article class="rounded-xl border border-brand-border bg-brand-dark p-4">
+                        <h3 class="font-bold text-white">2. 식당 한 곳에 투표</h3>
+                        <p class="mt-2 text-sm leading-6 text-gray-400">후보 카드의 소개와 대표 메뉴를 살펴본 뒤 선택합니다. 현재는 계정 로그인이 필요하며, 같은 주제의 식당 투표는 서버 날짜(UTC) 기준 하루 한 번 기록됩니다.</p>
+                    </article>
+                    <article class="rounded-xl border border-brand-border bg-brand-dark p-4">
+                        <h3 class="font-bold text-white">3. 메뉴 선호는 별도 확인</h3>
+                        <p class="mt-2 text-sm leading-6 text-gray-400">식당을 선택한 뒤 해당 식당에서 선호하는 메뉴를 추가로 고를 수 있습니다. 메뉴 선호 표와 식당 득표는 별도 집계되며, 메뉴 표가 식당 순위를 올리지는 않습니다.</p>
+                    </article>
+                </div>
+                <p class="text-xs leading-5 text-gray-500">건대에 표시되는 “예시” 투표와 후보는 화면 사용을 보여주기 위한 샘플이며 실제 매장 추천이나 방문 확인을 뜻하지 않습니다. 예시 후보는 관리자 콘솔에서 실제 정보로 교체할 수 있습니다.</p>
+                <a href="service.html" class="inline-flex items-center gap-2 text-sm font-bold text-brand-orange hover:text-brand-yellow">집계 방식과 정보 기준 더 보기 <i class="fa-solid fa-arrow-right text-xs"></i></a>
+            </section>
         </section>
 
 
@@ -387,6 +416,11 @@
             <div class="space-y-4" id="tierlist-cards-container">
                 <!-- Tier Rows populated by JS -->
             </div>
+            <section class="rounded-2xl border border-brand-border bg-brand-card/60 p-5 space-y-2" aria-labelledby="tier-method-heading">
+                <h3 id="tier-method-heading" class="font-bold text-white">이 티어표는 이렇게 만들어집니다</h3>
+                <p class="text-sm leading-6 text-gray-400">티어는 공개된 식당 후보의 득표수를 정렬해 표시합니다. 전체 랭킹은 선택한 지역의 모든 주제를 모으고, 메뉴별 랭킹은 선택한 주제 안에서만 비교합니다. 표본이 적거나 동률인 경우에도 구간별로 배치될 수 있으므로, 티어를 객관적인 맛 평가나 방문 만족도의 보증으로 해석하지 말아 주세요. 메뉴 선호 투표는 식당 득표와 분리되어 있습니다.</p>
+                <a href="service.html" class="text-sm font-bold text-brand-orange hover:text-brand-yellow">결과 산정 기준 확인하기 <i class="fa-solid fa-arrow-right text-xs"></i></a>
+            </section>
         </section>
 
 
@@ -400,7 +434,7 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="text-xl font-black text-white">맛집 픽 관리자 콘솔</h2>
+                            <h2 class="text-xl font-black text-white">f.rank. 관리자 콘솔</h2>
                             <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">MOCK v1.0</span>
                         </div>
                         <p class="text-xs text-gray-400">투표 주제와 맛집 관리, 네이버 링크 및 투표 통계 모니터링</p>
@@ -729,8 +763,8 @@
 
                 <!-- Card Footer Branding -->
                 <div class="relative z-10 border-t border-white/10 pt-2 flex justify-between items-center text-[10px] text-gray-400">
-                    <span>@맛집픽</span>
-                    <span class="text-brand-orange font-bold">seongsu-food.kr</span>
+                    <span>f.rank. · Food.Rank</span>
+                    <span class="text-brand-orange font-bold">PICK FRANK</span>
                 </div>
             </div>
 
@@ -758,7 +792,7 @@
                 <div class="w-12 h-12 mx-auto rounded-full vs-badge flex items-center justify-center text-xl font-black text-black">
                     👑
                 </div>
-                <h3 class="text-lg font-bold text-white">맛집 픽 로그인</h3>
+                <h3 class="text-lg font-bold text-white">f.rank. 로그인</h3>
                 <p class="text-xs text-gray-400">이메일로 로그인하거나 가입할 수 있습니다. 관리자 권한은 Supabase에서 관리합니다.</p>
             </div>
 
@@ -831,7 +865,7 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-gray-300 block mb-1">뱃지 라벨</label>
-                        <input type="text" id="input-tournament-badge" value="인기 폭발" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="input-tournament-badge" value="투표 주제" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
                     </div>
                 </div>
 
@@ -958,14 +992,15 @@
     <footer class="border-t border-brand-border bg-brand-dark py-6 px-4 text-center text-xs text-gray-500">
         <div class="max-w-6xl mx-auto space-y-2">
             <div class="flex flex-wrap justify-center items-center gap-4 text-gray-400">
-                <span class="font-bold">맛집 픽 · Live Food Vote</span>
-                <span>•</span>
+                <span class="font-bold">f.rank. · Food.Rank</span>
                 <button id="footer-admin-link" onclick="switchToAdminView('stats')" class="hidden text-indigo-400 hover:underline">관리자 콘솔 바로가기</button>
-                <span>•</span>
+                <a href="service.html" class="hover:text-white">서비스·집계 기준</a>
+                <a href="privacy.html" class="hover:text-white">개인정보처리방침</a>
+                <a href="contact.html" class="hover:text-white">문의하기</a>
 
             </div>
             <p>한 표씩 쌓이는 선택 데이터로 지역별 맛집의 인기 흐름을 보여주는 참여형 랭킹입니다.</p>
-            <p class="text-gray-600">© 2026 Seongsu Food Tournament. All rights reserved.</p>
+            <p class="text-gray-600">© 2026 f.rank.</p>
         </div>
     </footer>
 
@@ -1002,7 +1037,7 @@
                 region: '성수',
                 title: '감자탕·해장국·국밥',
                 desc: '성수동의 노포 및 깊은 국물 맛집 맛집 투표',
-                badge: '인기 폭발',
+                badge: '국물 요리',
                 icon: '🍲',
                 active: true,
                 candidates: [
@@ -1021,7 +1056,7 @@
                 region: '성수',
                 title: '빵·케이크·디저트',
                 desc: '인스타 감성과 감탄 나오는 맛의 디저트 성지',
-                badge: '2030 여성 픽',
+                badge: '디저트 투표',
                 icon: '🥐',
                 active: true,
                 candidates: [
@@ -1040,13 +1075,13 @@
                 region: '성수',
                 title: '파스타·피자·스테이크',
                 desc: '소개팅 성공률 100%! Atmosphere & 맛 보장',
-                badge: '파스타 인기',
+                badge: '양식 투표',
                 icon: '🍝',
                 active: true,
                 candidates: [
-                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '미쉐린 가이드 선정, 독창적인 고수 파스타', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%ED%8Pack피%20%EC%84%B1%EC%88%98', wins: 340, matches: 390 },
+                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '고수 파스타와 생면 메뉴를 소개하는 후보입니다.', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%ED%8C%A9%ED%94%BC%20%EC%84%B1%EC%88%98', wins: 340, matches: 390 },
                     { id: 202, name: '오스테리아 잔니', desc: '이탈리안 정통 생면 파스타 전문 다이닝', menu: '트러플 뇨끼', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%98%A4%EC%8A%A4%ED%85%8C%EB%A6%AC%EC%95%84%20%EC%9E%94%EB%8B%88', wins: 300, matches: 370 },
-                    { id: 203, name: '성수다락', desc: '매콤 크림 파스타와 폭신한 오므라이스 매력', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EB%8B%A4%EB%9D%BD', wins: 290, matches: 360 },
+                    { id: 203, name: '성수다락', desc: '크림 파스타와 오므라이스를 메뉴로 등록한 후보입니다.', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EB%8B%A4%EB%9D%BD', wins: 290, matches: 360 },
                     { id: 204, name: '바위파스타바', desc: '예약 전쟁! 생면 파스타 바의 감각적인 선두주자', menu: '생면 파스타 코스', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B0%94%EC%9C%84%ED%8C%8C%EC%8A%A4%ED%83%80%EB%B0%94', wins: 270, matches: 330 },
                     { id: 205, name: '쿠냐', desc: '아늑한 분위기에서 즐기는 스테이크와 생면', menu: '살치살 스테이크', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%BF%A0%EB%83%90', wins: 220, matches: 300 },
                     { id: 206, name: '세디치', desc: '깔끔한 와인 파어링과 브런치 전문 레스토랑', menu: '버섯 크림 파스타', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%84%B8%EB%94%94%EC%B9%98', wins: 190, matches: 280 },
@@ -1696,8 +1731,8 @@
         }
 
         function getCandidateVotes(candidate) {
-            const tournamentId = candidateTournamentIds.get(candidate);
-            return Math.max(0, Number(candidate.votes ?? candidate.wins ?? 0) + StatsService.getCandidateVoteCount(tournamentId, candidate.id));
+            const tournamentId = candidateTournamentIds.get(candidate) || candidate.tournamentId;
+            return StatsService.getCandidateVoteCount(tournamentId, candidate.id);
         }
 
         function getMenuChoices(candidate) {
@@ -1876,6 +1911,7 @@
                     (t.candidates || []).forEach(c => {
                         allCandidates.push({
                             ...c,
+                            tournamentId: String(t.id),
                             tourneyTitle: getTournamentDisplayTitle(t),
                             tourneyIcon: t.icon || '🍲'
                         });
@@ -1887,8 +1923,13 @@
                     return;
                 }
 
-                // Sort by win rate & total wins
+                // Rank only by recorded restaurant votes.
                 allCandidates.sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
+
+                if (allCandidates.every(candidate => getCandidateVotes(candidate) === 0)) {
+                    container.innerHTML = `<div class="p-8 text-center bg-brand-card border border-brand-border rounded-2xl"><p class="font-bold text-white">아직 ${currentRegion} 지역에 집계된 식당 투표가 없습니다.</p><p class="mt-2 text-xs text-gray-400">투표가 쌓이면 이 지역의 전체 후보를 득표수 순으로 보여드립니다.</p></div>`;
+                    return;
+                }
 
                 const total = allCandidates.length;
                 const sCount = Math.max(1, Math.ceil(total * 0.15));
@@ -1901,10 +1942,10 @@
                 const cTier = allCandidates.slice(bCount);
 
                 const tiers = [
-                    { tier: 'S Tier', desc: `${currentRegion} 맛집 누적 투표 상위 15%`, color: 'bg-red-600', items: sTier },
-                    { tier: 'A Tier', desc: '모두가 인정하는 독보적 우수 매장', color: 'bg-orange-500', items: aTier },
-                    { tier: 'B Tier', desc: '탄탄한 팬덤과 단골 보유 매장', color: 'bg-yellow-500', items: bTier },
-                    { tier: 'C Tier', desc: '기본에 충실한 추천 후보 매장', color: 'bg-emerald-500', items: cTier }
+                    { tier: 'S Tier', desc: `${currentRegion} 후보 중 득표 상위 구간`, color: 'bg-red-600', items: sTier },
+                    { tier: 'A Tier', desc: '전체 후보 중 다음 득표 구간', color: 'bg-orange-500', items: aTier },
+                    { tier: 'B Tier', desc: '전체 후보 중 그다음 득표 구간', color: 'bg-yellow-500', items: bTier },
+                    { tier: 'C Tier', desc: '나머지 후보', color: 'bg-emerald-500', items: cTier }
                 ];
 
                 renderTierSections(tiers, container, true);
@@ -1924,16 +1965,21 @@
                 populateCategoryFilterButtons();
                 const sorted = [...tourney.candidates].sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
 
+                if (sorted.every(candidate => getCandidateVotes(candidate) === 0)) {
+                    container.innerHTML = `<div class="p-8 text-center bg-brand-card border border-brand-border rounded-2xl"><p class="font-bold text-white">아직 이 주제에 집계된 식당 투표가 없습니다.</p><p class="mt-2 text-xs text-gray-400">첫 식당 투표가 기록되면 득표 순으로 티어를 표시합니다.</p></div>`;
+                    return;
+                }
+
                 const sTier = sorted.slice(0, 1);
                 const aTier = sorted.slice(1, 3);
                 const bTier = sorted.slice(3, 6);
                 const cTier = sorted.slice(6);
 
                 const tiers = [
-                    { tier: 'S Tier', desc: `${getTournamentDisplayTitle(tourney)} 독보적 1위`, color: 'bg-red-600', items: sTier },
-                    { tier: 'A Tier', desc: '득표 상위 후보군', color: 'bg-orange-500', items: aTier },
-                    { tier: 'B Tier', desc: '꾸준히 선택받는 메뉴', color: 'bg-yellow-500', items: bTier },
-                    { tier: 'C Tier', desc: '더 많은 픽을 기다리는 맛집', color: 'bg-emerald-500', items: cTier }
+                    { tier: 'S Tier', desc: `${getTournamentDisplayTitle(tourney)} 득표 1위`, color: 'bg-red-600', items: sTier },
+                    { tier: 'A Tier', desc: '득표 2~3위 후보', color: 'bg-orange-500', items: aTier },
+                    { tier: 'B Tier', desc: '득표 4~6위 후보', color: 'bg-yellow-500', items: bTier },
+                    { tier: 'C Tier', desc: '그 외 후보', color: 'bg-emerald-500', items: cTier }
                 ];
 
                 renderTierSections(tiers, container, false);
@@ -2070,14 +2116,16 @@
             let allCandidates = [];
             tournaments.forEach(t => {
                 (t.candidates || []).forEach(c => {
-                    allCandidates.push({ ...c, tourneyTitle: getTournamentDisplayTitle(t) });
+                    allCandidates.push({ ...c, tournamentId: String(t.id), tourneyTitle: getTournamentDisplayTitle(t) });
                 });
             });
 
-            allCandidates.sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
-            const top5 = allCandidates.slice(0, 5);
-
-            top5.forEach((c, idx) => {
+            if (!allCandidates.some(candidate => getCandidateVotes(candidate) > 0)) {
+                topContainer.innerHTML = '<p class="py-5 text-center text-xs text-gray-400">아직 집계된 식당 투표가 없습니다.</p>';
+            } else {
+                allCandidates.sort((a, b) => getCandidateVotes(b) - getCandidateVotes(a));
+                const top5 = allCandidates.filter(candidate => getCandidateVotes(candidate) > 0).slice(0, 5);
+                top5.forEach((c, idx) => {
                 const voteCount = getCandidateVotes(c);
                 const row = document.createElement('div');
                 row.className = 'flex items-center justify-between p-2.5 rounded-xl bg-brand-dark border border-brand-border';
@@ -2103,7 +2151,8 @@
                     </div>
                 `;
                 topContainer.appendChild(row);
-            });
+                });
+            }
 
             renderCharts(tournaments, stats);
         }
@@ -2114,7 +2163,7 @@
             const catVotes = tournaments.map(t => {
                 let votes = 0;
                 (t.candidates || []).forEach(c => { votes += getCandidateVotes(c); });
-                return votes || 50;
+                return votes;
             });
 
             if (categoryChartInstance) categoryChartInstance.destroy();
@@ -2286,7 +2335,7 @@
             renderRegionOptions(currentRegion);
             document.getElementById('input-tournament-desc').value = '';
             document.getElementById('input-tournament-icon').value = '🍔';
-            document.getElementById('input-tournament-badge').value = '인기 폭발';
+            document.getElementById('input-tournament-badge').value = '투표 주제';
 
             document.getElementById('modal-tournament').classList.remove('hidden');
         }
