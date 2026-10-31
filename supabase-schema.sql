@@ -445,6 +445,23 @@ begin
 end;
 $$;
 
+-- Remove vote rows attached to the retired built-in sample tournaments only.
+create or replace function public.admin_remove_legacy_demo_votes()
+returns integer
+language plpgsql security definer
+set search_path = public, pg_temp
+as $$
+declare
+    deleted_count integer;
+begin
+    if not public.is_admin() then raise exception 'Admin access required'; end if;
+    delete from public.vote_events
+    where tournament_id in ('gamjatang', 'dessert', 'pasta', 'konkuk-korean-demo', 'konkuk-grill-demo', 'konkuk-street-food-demo');
+    get diagnostics deleted_count = row_count;
+    return deleted_count;
+end;
+$$;
+
 revoke all on function public.cast_restaurant_vote(uuid, text, text) from public;
 revoke all on function public.cast_restaurant_vote(uuid, text, text) from anon;
 revoke all on function public.cast_menu_vote(uuid, text, text, text) from public;
@@ -455,9 +472,11 @@ revoke all on function public.cancel_restaurant_vote(uuid, text, text) from publ
 revoke all on function public.cancel_restaurant_vote(uuid, text, text) from anon;
 revoke all on function public.get_vote_dashboard(uuid) from public;
 revoke all on function public.admin_reset_vote_data() from public, anon;
+revoke all on function public.admin_remove_legacy_demo_votes() from public, anon;
 grant execute on function public.cast_restaurant_vote(uuid, text, text) to authenticated;
 grant execute on function public.cast_menu_vote(uuid, text, text, text) to authenticated;
 grant execute on function public.cancel_menu_vote(uuid, text, text, text) to authenticated;
 grant execute on function public.cancel_restaurant_vote(uuid, text, text) to authenticated;
 grant execute on function public.get_vote_dashboard(uuid) to anon, authenticated;
 grant execute on function public.admin_reset_vote_data() to authenticated;
+grant execute on function public.admin_remove_legacy_demo_votes() to authenticated;

@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
+  <script>try{if(localStorage.getItem("frank-theme")==="dark")document.documentElement.classList.add("dark")}catch(_){}</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>문의하기 | f.rank.</title>
@@ -38,9 +39,18 @@
     .field-error { color: #fca5a5; }
     .field-error:empty { display: none !important; }
   </style>
+<style>
+:root{color-scheme:light;background:#f7f8fa;color:#20242c;font-family:"Noto Sans KR",system-ui,sans-serif}:root.dark{color-scheme:dark;background:#0f0f12;color:#f3f4f6}
+body{background:var(--page-bg,#f7f8fa);color:inherit;transition:background-color .2s,color .2s}:root.dark body{--page-bg:#0f0f12}
+.panel{background:var(--panel-bg,#fff);border-color:var(--line,#e4e7ec)}:root.dark .panel{--panel-bg:#18181c;--line:#2a2a32}
+p,li,label,footer{color:var(--muted,#475467)}:root.dark p,:root.dark li,:root.dark label,:root.dark footer{--muted:#c5c6cc}
+header,footer{border-color:var(--line,#e4e7ec)!important}:root.dark header,:root.dark footer{--line:#2a2a32}
+input,select,textarea{background:var(--field-bg,#fff)!important;color:var(--field-text,#20242c)!important;border-color:var(--line,#d0d5dd)!important}:root.dark input,:root.dark select,:root.dark textarea{--field-bg:#0f0f12;--field-text:#f3f4f6;--line:#3b3b45}
+.theme-toggle{border:1px solid #d0d5dd;border-radius:10px;background:#fff;color:#344054;padding:7px 10px;font:700 12px "Noto Sans KR",sans-serif;cursor:pointer}:root.dark .theme-toggle{border-color:#3b3b45;background:#18181c;color:#f3f4f6}
+</style>
 </head>
 <body>
-  <header><nav aria-label="주요 메뉴"><a href="index.html">f.rank.</a><a href="service.html">서비스·집계 기준</a><a href="privacy.html">개인정보처리방침</a><a href="contact.html" aria-current="page">문의하기</a></nav></header>
+  <header><nav aria-label="주요 메뉴"><a href="index.html">f.rank.</a><a href="service.html">서비스 안내·이용약관</a><a href="privacy.html">개인정보처리방침</a><a href="contact.html" aria-current="page">문의하기</a><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme">&#45796;&#53356;</button></nav></header>
   <main>
     <p class="eyebrow">f.rank. 운영팀</p>
     <h1>문의하기</h1>
@@ -90,5 +100,8 @@
     formspree('initForm', { formElement: '#contact-form', formId: 'xgaavegj' });
   </script>
   <script src="https://unpkg.com/@formspree/ajax@1" defer></script>
+<script>
+(function(){var key='frank-theme';function setTheme(theme){document.documentElement.classList.toggle('dark',theme==='dark');try{localStorage.setItem(key,theme)}catch(_){}document.querySelectorAll('[data-theme-toggle]').forEach(function(b){var d=theme==='dark';b.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');b.innerHTML=d?'<i class="fa-solid fa-sun" aria-hidden="true"></i> Light':'<i class="fa-solid fa-moon" aria-hidden="true"></i> Dark'})}document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.addEventListener('click',function(){setTheme(document.documentElement.classList.contains('dark')?'light':'dark')})});setTheme(document.documentElement.classList.contains('dark')?'dark':'light')})();
+</script>
 </body>
 </html>

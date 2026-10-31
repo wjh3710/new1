@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" class="dark">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=1nf6mm99hz"></script>
     <!-- Google Fonts Inter & Noto Sans KR -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <!-- Canvas Confetti Library for Winner Effect -->
@@ -26,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
+        try { if (localStorage.getItem('frank-theme') === 'dark') document.documentElement.classList.add('dark'); } catch (_) {}
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -85,7 +85,6 @@
             background: #3F3F4E;
         }
         .live-dot { animation: live-pulse 1.4s ease-out infinite; }
-        #nearby-map { height: 380px; }
         @keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(0,255,157,.55); } 70% { box-shadow: 0 0 0 8px rgba(0,255,157,0); } 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0); } }
         @media (max-width: 640px) {
             html { -webkit-text-size-adjust: 100%; }
@@ -96,9 +95,7 @@
             #btn-admin-toggle { min-height: 2.75rem; padding: .5rem .65rem !important; font-size: .8125rem !important; line-height: 1.35; white-space: normal; }
             #auth-nav-container { max-width: 100%; }
             main { padding: .75rem .75rem 6rem !important; }
-            #nearby-map { height: 52vh; min-height: 300px; }
             #search-region-select { width: 9rem !important; min-width: 9rem; }
-            #nearby-radius { width: auto !important; }
             main, main * { min-width: 0; }
             h1, h2, h3, h4, p, label { overflow-wrap: anywhere; word-break: keep-all; }
             h1 { font-size: clamp(1.3rem, 5.7vw, 1.75rem) !important; line-height: 1.3 !important; }
@@ -121,8 +118,6 @@
             #view-home > .relative > div:last-child { display: none; }
             #view-home > div:nth-child(3) > .flex:first-child { align-items: flex-start; gap: .25rem; flex-direction: column; margin-bottom: .55rem !important; }
             #view-home > div:nth-child(3) > .flex:first-child > span { font-size: .7rem; }
-            #home-region-filters, #admin-region-tabs { gap: .4rem !important; }
-            #home-region-filters button, #admin-region-tabs button {
                 min-height: 2.5rem;
                 height: auto;
                 max-width: 100%;
@@ -132,7 +127,6 @@
                 overflow-wrap: anywhere;
                 text-align: center;
             }
-            #home-region-filters { margin-bottom: .75rem !important; }
             #category-cards-container { gap: .65rem !important; }
             #category-cards-container .vote-card { padding: .85rem !important; gap: .55rem !important; border-radius: 1rem !important; }
             #category-cards-container .vote-card > div:first-child { gap: .45rem !important; }
@@ -222,8 +216,48 @@
             #btn-admin-toggle { padding-inline: .45rem !important; font-size: .75rem !important; }
             #view-home > .relative { padding: .75rem !important; }
             main { padding-bottom: 6rem !important; }
-            #home-region-filters button { flex: 1 1 calc(50% - .4rem); }
         }
+        html:not(.dark) body { background:#f7f8fa; color:#20242c; }
+        html:not(.dark) .bg-brand-dark, html:not(.dark) .bg-brand-dark\/50, html:not(.dark) .bg-brand-dark\/95 { background-color:#fff !important; }
+        html:not(.dark) .bg-brand-card, html:not(.dark) .bg-brand-card\/50, html:not(.dark) .bg-brand-card\/60, html:not(.dark) .bg-brand-card\/70 { background-color:#fff !important; }
+        html:not(.dark) .border-brand-border { border-color:#e4e7ec !important; }
+        html:not(.dark) .text-white { color:#20242c !important; }
+        html:not(.dark) .text-gray-200, html:not(.dark) .text-gray-300 { color:#475467 !important; }
+        html:not(.dark) .text-gray-400 { color:#667085 !important; }
+        html:not(.dark) .text-gray-500, html:not(.dark) .text-gray-600 { color:#7b8493 !important; }
+        html:not(.dark) header.sticky { background:rgba(255,255,255,.94) !important; }
+        html:not(.dark) input, html:not(.dark) select, html:not(.dark) textarea { background:#fff !important; color:#20242c !important; border-color:#d0d5dd !important; }
+        html:not(.dark) .bg-gradient-to-r.from-brand-card { background-image:linear-gradient(to right,#fff,#f3f5f8,#fff) !important; }
+        .theme-toggle { min-height:36px; padding:7px 10px; border:1px solid #d0d5dd; border-radius:10px; background:#fff; color:#344054; font:700 12px 'Noto Sans KR',sans-serif; cursor:pointer; }
+        .dark .theme-toggle { border-color:#3b3b45; background:#18181c; color:#f3f4f6; }
+        .region-picker { display:flex; align-items:center; gap:.65rem; padding:.4rem .55rem .4rem .8rem; border:1px solid #e4e7ec; border-radius:14px; background:#fff; box-shadow:0 4px 14px rgba(16,24,40,.05); }
+        .region-picker-label { color:#667085; font-size:.7rem; font-weight:800; letter-spacing:.02em; }
+        .region-picker-control { position:relative; display:flex; align-items:center; }
+        .region-picker-control select { min-width:8.5rem; appearance:none; border:0 !important; border-radius:9px; padding:.55rem 2rem .55rem .75rem; background:#f2f4f7 !important; color:#20242c !important; font-size:.82rem; font-weight:800; cursor:pointer; }
+        .region-picker-control i { position:absolute; right:.7rem; pointer-events:none; color:#667085; font-size:.7rem; }
+        .dark .region-picker { border-color:#2a2a32; background:#18181c; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+        .dark .region-picker-label { color:#9ca3af; }
+        .dark .region-picker-control select { background:#0f0f12 !important; color:#f3f4f6 !important; }
+        .dark .region-picker-control i { color:#9ca3af; }
+        .bottom-tab { position:relative; min-height:4.25rem; transition:color .18s ease, background-color .18s ease; }
+        .bottom-tab[aria-current="page"] { background:linear-gradient(180deg,rgba(255,94,30,.09),transparent 85%); }
+        .bottom-tab[aria-current="page"]::before { position:absolute; top:0; left:25%; width:50%; height:2px; border-radius:0 0 2px 2px; background:#ff5e1e; content:""; }
+        .dark .bottom-tab[aria-current="page"] { background:linear-gradient(180deg,rgba(255,94,30,.13),transparent 85%); }
+        @media (max-width:640px) { .region-picker { width:100%; justify-content:space-between; } .region-picker-control select { min-width:9rem; } }
+        html:not(.dark) #view-admin .bg-brand-border { background-color:#eef0f4 !important; }
+        html:not(.dark) #view-admin .bg-brand-dark\/50 { background-color:#f7f8fa !important; }
+        html:not(.dark) #view-admin button.bg-indigo-600,
+        html:not(.dark) #view-admin button.bg-indigo-500,
+        html:not(.dark) #view-admin button.bg-red-600,
+        html:not(.dark) #view-admin button.bg-brand-orange { color:#fff !important; }
+        html:not(.dark) #view-admin button.bg-brand-border { color:#344054 !important; }
+        html:not(.dark) #view-admin .text-indigo-300 { color:#4f46e5 !important; }
+        html:not(.dark) #view-admin .text-indigo-400 { color:#4338ca !important; }
+        html:not(.dark) #view-admin .text-emerald-400 { color:#15803d !important; }
+        html:not(.dark) #view-admin .text-red-300 { color:#b42318 !important; }
+        html:not(.dark) #view-admin .bg-indigo-500\/20 { background-color:#eef2ff !important; }
+        html:not(.dark) #view-admin .bg-emerald-500\/20 { background-color:#ecfdf3 !important; }
+        html:not(.dark) #view-admin .bg-red-600\/20 { background-color:#fef3f2 !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-orange selection:text-white">
@@ -267,6 +301,7 @@
 
             <!-- Navigation Tabs -->
             <nav class="flex items-center gap-1.5 sm:gap-3">
+                <button class="theme-toggle" type="button" data-theme-toggle aria-label="다크 모드로 전환"><i class="fa-solid fa-moon" aria-hidden="true"></i> <span>다크</span></button>
                 <button id="nav-search-button" onclick="openFoodSearch()" class="px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg border border-brand-orange/50 text-brand-orange hover:bg-brand-orange hover:text-white transition-all flex items-center gap-1.5" aria-label="맛집 검색 열기">
                     <i class="fa-solid fa-magnifying-glass"></i><span>검색</span>
                 </button>
@@ -291,10 +326,11 @@
         <section id="view-home" class="space-y-8 animate-fade-in">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-brand-border bg-brand-card/70 p-4">
                 <div><p class="text-xs font-bold text-brand-orange">지역별 맛집 랭킹</p><p class="text-sm text-gray-300">지역을 고르면 해당 지역의 투표와 검색 통계를 확인할 수 있어요.</p></div>
-                <label class="flex items-center gap-2 text-xs font-bold text-gray-300">지역
-                    <select id="home-region-select" onchange="setCurrentRegion(this.value)" class="min-w-32 rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-white">
+                <label class="region-picker">
+                    <span class="region-picker-label">지역 선택</span>
+                    <span class="region-picker-control"><select id="home-region-select" onchange="setCurrentRegion(this.value)" aria-label="지역 선택">
                         <option value="전체">전체</option>
-                    </select>
+                    </select><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
                 </label>
             </div>
             <!-- Hero Banner -->
@@ -304,13 +340,10 @@
                         <span class="animate-pulse">🔥</span> <span id="home-region-badge">성수</span> 지역 투표
                     </div>
                     <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
-                        오늘 뭐 먹지? 여기서 픽하자.<br>
+                        <span id="home-hero-headline">오늘 뭐 먹지? 여기서 픽하자.</span><br>
                         <span id="home-region-title" class="text-brand-orange">성수</span> 맛집 투표와 선택 결과
                     </h1>
-                    <p class="text-gray-400 text-sm sm:text-base">
-                        frank처럼 솔직하게, 투표 기준과 결과를 투명하게 공개해요.<br class="hidden sm:block">
-                        리뷰 이벤트 보상 대신 로그인 이용자의 선택을 모아 <span id="hero-region-copy">성수</span> 맛집 흐름을 보여드려요.
-                    </p>
+                    <p id="home-hero-description" class="text-gray-400 text-sm sm:text-base">frank처럼 솔직하게, 투표 기준과 결과를 투명하게 공개해요. 리뷰 이벤트 보상 대신 로그인 이용자의 선택을 모아 {지역} 맛집 흐름을 보여드려요.</p>
                 </div>
                 <div class="relative z-10 flex-shrink-0">
                     <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-tr from-brand-orange to-brand-yellow flex items-center justify-center text-6xl shadow-2xl glow-orange">
@@ -329,8 +362,6 @@
                         <i class="fa-solid fa-location-dot text-brand-neon"></i> <span id="active-region-caption">지금 참여 가능한 지역 투표</span>
                     </span>
                 </div>
-
-                <p class="text-xs text-gray-400 mb-2">📍 지금 투표가 진행 중인 지역</p><div class="flex flex-wrap gap-2 mb-4" id="home-region-filters"></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="category-cards-container">
                     <!-- Cards will be populated by JS -->
                 </div>
@@ -365,7 +396,7 @@
                         <p class="mt-2 text-sm leading-6 text-gray-400">식당을 선택한 뒤 해당 식당에서 선호하는 메뉴를 추가로 고를 수 있습니다. 메뉴 선호 표와 식당 득표는 별도 집계되며, 메뉴 표가 식당 순위를 올리지는 않습니다.</p>
                     </article>
                 </div>
-                <p class="text-xs leading-5 text-gray-500">건대에 표시되는 “예시” 투표와 후보는 화면 사용을 보여주기 위한 샘플이며 실제 매장 추천이나 방문 확인을 뜻하지 않습니다. 예시 후보는 관리자 콘솔에서 실제 정보로 교체할 수 있습니다.</p>
+                <p class="text-xs leading-5 text-gray-500">성수·건대에 표시되는 “[검수용 예시]” 투표와 후보는 화면 확인을 위한 가상 자료이며 실제 매장 추천이나 방문 확인을 뜻하지 않습니다. 공개 출시 전에는 예시를 삭제하거나 확인된 정보로 교체해야 합니다.</p>
                 <a href="service.html" class="inline-flex items-center gap-2 text-sm font-bold text-brand-orange hover:text-brand-yellow">집계 방식과 정보 기준 더 보기 <i class="fa-solid fa-arrow-right text-xs"></i></a>
             </section>
         </section>
@@ -430,30 +461,7 @@
         </section>
 
 
-        <section id="view-nearby" class="hidden space-y-5 animate-fade-in">
-            <div class="flex flex-col gap-4 rounded-2xl border border-brand-border bg-brand-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                <div>
-                    <p class="text-xs font-bold text-brand-neon">내 주변 맛집</p>
-                    <h1 class="mt-1 text-2xl font-black text-white">현재 위치에서 가까운 순위</h1>
-                    <p id="nearby-status" class="mt-2 text-sm text-gray-400">위치 정보를 켜면 선택한 반경 안의 맛집을 보여드려요.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <label for="nearby-radius" class="text-xs font-bold text-gray-300">반경</label>
-                    <select id="nearby-radius" onchange="setNearbyRadius(this.value)" class="rounded-xl border border-brand-border bg-brand-dark px-3 py-2.5 text-sm font-bold text-white" style="color-scheme: dark">
-                        <option value="1">1km</option><option value="3" selected>3km</option><option value="5">5km</option><option value="10">10km</option>
-                    </select>
-                    <button onclick="requestNearbyLocation()" class="rounded-xl bg-brand-orange px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-orange/90"><i class="fa-solid fa-location-crosshairs mr-1"></i>현재 위치 사용</button>
-                </div>
-            </div>
-            <div class="grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
-                <div id="nearby-map" class="z-0 overflow-hidden rounded-2xl border border-brand-border bg-brand-card" aria-label="현재 위치와 주변 맛집 지도"></div>
-                <section class="min-h-80 rounded-2xl border border-brand-border bg-brand-card p-4 sm:p-5">
-                    <div class="mb-3 flex items-center justify-between gap-2">
-                        <h2 class="font-bold text-white">반경 내 맛집 순위</h2>
-                        <span id="nearby-result-count" class="text-xs text-gray-500"></span>
-                    </div>
-                    <ol id="nearby-ranking-list" class="space-y-2"></ol>
-                </section>
+section>
             </div>
             <p class="text-[11px] leading-relaxed text-gray-500">위치는 주변 순위를 이 기기에서 계산하는 데 사용하며 서버에 저장하지 않습니다. 네이버 지도에 현재 지도 영역이 전달될 수 있습니다. 매장 위치가 표시되려면 관리자 화면에서 후보별 위도·경도를 등록해야 합니다.</p>
         </section>
@@ -738,6 +746,19 @@
 
             <!-- ADMIN TAB 4: SYSTEM SETTINGS -->
             <div id="admin-tab-system" class="hidden space-y-6">
+                <div class="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
+                    <div>
+                        <h3 class="font-bold text-white text-base">메인 화면 문구</h3>
+                        <p class="text-xs text-gray-400 mt-1">메인 배너의 제목과 설명을 설정합니다. 설명에 {지역}을 입력하면 선택한 지역명이 표시됩니다.</p>
+                    </div>
+                    <label class="block space-y-2"><span class="text-xs font-bold text-gray-300">배너 제목</span>
+                        <input id="setting-hero-headline" type="text" maxlength="100" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm text-white">
+                    </label>
+                    <label class="block space-y-2"><span class="text-xs font-bold text-gray-300">배너 설명</span>
+                        <textarea id="setting-hero-description" rows="3" maxlength="300" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-sm text-white"></textarea>
+                    </label>
+                    <button type="button" onclick="saveSystemSettings()" class="px-4 py-2 rounded-xl bg-brand-orange hover:bg-orange-600 text-white text-xs font-bold">문구 저장</button>
+                </div>
                 <!-- Abuse Prevention & Voting Policy Settings -->
                 <div class="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
                     <div class="flex items-center gap-3">
@@ -791,7 +812,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-white text-base">데이터 백업 / 복원 및 공장 초기화</h3>
-                            <p class="text-xs text-gray-400">저장된 투표 및 식당 데이터를 JSON으로 백업하거나 초기 상태로 복구합니다.</p>
+                            <p class="text-xs text-gray-400">투표 항목·지역·설정·집계 통계를 JSON으로 내보내고 복원합니다. 전체 초기화는 투표·기록을 삭제합니다.</p>
                         </div>
                     </div>
 
@@ -804,7 +825,7 @@
                             <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importDataJSON(event)">
                         </label>
                         <button onclick="confirmResetToDefault()" class="px-4 py-2.5 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs transition-all flex items-center gap-1.5 ml-auto">
-                            <i class="fa-solid fa-rotate-left"></i> 초기 예시 데이터로 리셋
+                            <i class="fa-solid fa-rotate-left"></i> 전체 투표·설정 초기화
                         </button>
                     </div>
                 </div>
@@ -814,15 +835,12 @@
     </main>
 
     <nav id="bottom-tab-bar" aria-label="주요 메뉴" class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-border bg-brand-dark/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,.25)] backdrop-blur-xl">
-        <div class="mx-auto grid max-w-2xl grid-cols-5">
+        <div class="mx-auto grid max-w-2xl grid-cols-4">
             <button type="button" data-bottom-tab="home" onclick="showView('home')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-brand-orange" aria-label="현재 진행 중인 투표">
                 <i class="fa-solid fa-fire text-lg"></i><span class="text-[10px] font-bold">투표</span>
             </button>
             <button type="button" data-bottom-tab="tierlist" onclick="showView('tierlist')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="맛집 티어표">
                 <i class="fa-solid fa-ranking-star text-lg"></i><span class="text-[10px] font-bold">티어표</span>
-            </button>
-            <button type="button" data-bottom-tab="nearby" onclick="showView('nearby')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="내 주변 맛집">
-                <i class="fa-solid fa-map-location-dot text-lg"></i><span class="text-[10px] font-bold">내 주변</span>
             </button>
             <button type="button" data-bottom-tab="community" onclick="showView('community')" class="bottom-tab flex min-h-16 flex-col items-center justify-center gap-1 text-gray-500" aria-label="맛집 커뮤니티">
                 <i class="fa-solid fa-comments text-lg"></i><span class="text-[10px] font-bold">커뮤니티</span>
@@ -878,11 +896,11 @@
                 <div class="relative z-10 space-y-1.5 bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs">
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded bg-red-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0">S</span>
-                        <span id="story-tier-s" class="text-gray-200 font-bold truncate">소문난성수감자탕</span>
+                        <span id="story-tier-s" class="text-gray-200 font-bold truncate">S 티어 후보</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded bg-orange-500 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0">A</span>
-                        <span id="story-tier-a" class="text-gray-300 truncate">성수육칼</span>
+                        <span id="story-tier-a" class="text-gray-300 truncate">A 티어 후보</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded bg-yellow-500 text-black font-black text-[10px] flex items-center justify-center flex-shrink-0">B</span>
@@ -1001,6 +1019,10 @@
                     <label for="auth-password" class="sr-only">비밀번호</label>
                     <input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="비밀번호 (6자 이상)" class="w-full bg-brand-dark border border-brand-border rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-brand-orange">
                 </div>
+                <label class="flex items-start gap-2 text-[11px] leading-relaxed text-gray-400">
+                    <input id="auth-policy-agreement" type="checkbox" required class="mt-0.5 accent-brand-orange">
+                    <span>만 14세 이상이며 <a href="service.html#terms" target="_blank" rel="noopener noreferrer" class="text-brand-orange underline">이용약관</a>에 동의하고 <a href="privacy.html" target="_blank" rel="noopener noreferrer" class="text-brand-orange underline">개인정보처리방침</a>을 확인했습니다.</span>
+                </label>
                 <button id="auth-submit-button" type="submit" class="w-full py-3 rounded-xl bg-brand-orange text-white font-bold text-sm hover:opacity-90 transition-all">로그인</button>
                 <div class="flex items-center gap-3 py-1 text-[10px] text-gray-500"><span class="h-px flex-1 bg-brand-border"></span><span>또는</span><span class="h-px flex-1 bg-brand-border"></span></div>
                 <button type="button" onclick="signInWithKakao()" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FEE500] py-3 text-sm font-bold text-[#191919] transition-all hover:bg-[#F5DC00]">
@@ -1134,20 +1156,7 @@
                     </div>
                     <input type="url" id="input-candidate-naver" placeholder="https://map.naver.com/p/search/..." class="w-full bg-brand-card border border-brand-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#03C75A] font-mono">
                     <p class="text-[10px] text-gray-500">사용자가 해당 맛집의 네이버 지도 상세 정보(위치, 영업시간, 영수증 리뷰)를 바로 확인할 수 있습니다.</p>
-                    <div class="grid grid-cols-2 gap-2 pt-1">
-                        <label class="text-[10px] font-bold text-gray-400">위도
-                            <input type="number" id="input-candidate-latitude" step="any" min="-90" max="90" placeholder="예: 37.5446" class="mt-1 w-full rounded-lg border border-brand-border bg-brand-card px-2.5 py-2 text-xs text-white">
-                        </label>
-                        <label class="text-[10px] font-bold text-gray-400">경도
-                            <input type="number" id="input-candidate-longitude" step="any" min="-180" max="180" placeholder="예: 127.0560" class="mt-1 w-full rounded-lg border border-brand-border bg-brand-card px-2.5 py-2 text-xs text-white">
-                        </label>
-                    </div>
-                    <p class="text-[10px] text-gray-500">내 주변 지도와 반경 순위에 표시하려면 두 좌표를 모두 입력하세요.</p>
-                    <button type="button" onclick="toggleCandidateLocationPicker()" class="rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-[11px] font-bold text-gray-300 hover:border-brand-orange hover:text-white"><i class="fa-solid fa-map-pin mr-1 text-brand-orange"></i>지도에서 위치 선택</button>
-                    <div id="candidate-location-picker" class="hidden overflow-hidden rounded-xl border border-brand-border">
-                        <div class="bg-brand-card px-3 py-2 text-[10px] text-gray-400">지도를 이동한 뒤 매장 위치를 눌러 좌표를 지정하세요.</div>
-                        <div id="candidate-picker-map" class="h-56"></div>
-                    </div>
+          </div>
                 </div>
 
                 <div>
@@ -1209,7 +1218,7 @@
             <div class="flex flex-wrap justify-center items-center gap-4 text-gray-400">
                 <span class="font-bold">f.rank. · Food.Rank</span>
                 <button id="footer-admin-link" onclick="switchToAdminView('stats')" class="hidden text-indigo-400 hover:underline">관리자 콘솔 바로가기</button>
-                <a href="service.html" class="hover:text-white">서비스·집계 기준</a>
+                <a href="service.html" class="hover:text-white">서비스 안내·이용약관</a>
                 <a href="privacy.html" class="hover:text-white">개인정보처리방침</a>
                 <a href="contact.html" class="hover:text-white">문의하기</a>
 
@@ -1226,6 +1235,7 @@
         // 1. CONFIG & DEFAULT SEED DATA
         // ========================================================
         const CONFIG = {
+            POLICY_VERSION: '2026-10-31',
             STORAGE_KEYS: {
                 DATA: 'FOOD_TOURNAMENT_DATA_V2', // incremented key for schema upgrade
                 STATS: 'FOOD_TOURNAMENT_STATS_V2',
@@ -1244,98 +1254,52 @@
         let supabaseSessionUserId = null;
 
         const REGION_STORAGE_KEY = "FOOD_REGIONS_V1";
-        const DEFAULT_REGIONS = ['건대'];
+        const DEFAULT_REGIONS = ['성수', '건대'];
 
+        // Isolated, clearly labeled fixtures for the final functional review.
         const DEFAULT_TOURNAMENTS = [
             {
-                id: 'gamjatang',
-                region: '성수',
-                title: '감자탕·해장국·국밥',
-                desc: '성수동의 노포 및 깊은 국물 맛집 맛집 투표',
-                badge: '국물 요리',
-                icon: '🍲',
-                active: true,
+                id: 'review-seongsu-korean', region: '성수', title: '[검수용 예시] 성수 한식',
+                desc: '화면과 투표 흐름을 확인하기 위한 가상 예시입니다. 실제 매장 정보가 아닙니다.', badge: '검수용 예시', icon: '🍲', active: true,
                 candidates: [
-                    { id: 1, name: '소문난성수감자탕', desc: '백종원 3대천왕 출신, 성수동 대표 독보적 감자탕', menu: '감자탕 / 우거지', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%86%8C%EB%AC%B8%EB%82%9C%EC%84%B1%EC%88%98%EA%B0%90%EC%9E%90%ED%83%95', wins: 382, matches: 412 },
-                    { id: 2, name: '성수육칼', desc: '칼칼하고 진한 육개장 칼국수와 수육의 완벽한 조합', menu: '육개장 칼국수', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%9C%A1%EC%88%98', wins: 290, matches: 380 },
-                    { id: 3, name: '뚝섬 한식당', desc: '직장인 성지, 칼칼한 내장탕과 뼈해장국 전문점', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%9A%9D%EC%84%AC%ED%95%9C%EC%8B%9D%EB%8B%B9', wins: 240, matches: 340 },
-                    { id: 4, name: '성수순대국', desc: '깔끔한 국물과 꽉 찬 수제 순대의 정석', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%88%9C%EB%8C%80%EA%B5%AD', wins: 195, matches: 300 },
-                    { id: 5, name: '서울숲 곰탕', desc: '맑고 맑은 고기 국물에 대파 듬뿍 노포 스타일', menu: '나주곰탕', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%EC%8F%B2%EA%B3%B0%ED%83%95', wins: 180, matches: 290 },
-                    { id: 6, name: '뚝도시장 해장국', desc: '뚝도쇼핑효소시장 근처 오래된 시원한 선지해장국', menu: '선지해장국', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%9A%9D%EB%8F%84%EC%8B%9C%EC%9E%A5%ED%95%B4%EC%9E%A5%EA%B5%AD', wins: 150, matches: 270 },
-                    { id: 7, name: '성수 설렁탕', desc: '진하게 고아낸 사골 국물과 깍두기 맛집', menu: '설렁탕', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EC%84%A4%EB%A0%81%ED%83%95', wins: 130, matches: 260 },
-                    { id: 8, name: '서울숲 매운갈비찜', desc: '중독성 강한 매콤한 양념과 부드러운 갈비', menu: '매운갈비찜', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%9C%EC%9A%B8%EC%8F%B2%EB%A7%A4%EC%9A%B4%EA%B0%88%EB%B9%84%EC%80%9C', wins: 110, matches: 250 }
+                    { id: 'ss-k-1', name: '[예시] 성수 식당 A', desc: '검수 전용 가상 후보입니다.', menu: '김치찌개 / 제육볶음', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'ss-k-2', name: '[예시] 성수 식당 B', desc: '검수 전용 가상 후보입니다.', menu: '된장찌개 / 비빔밥', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'ss-k-3', name: '[예시] 성수 식당 C', desc: '검수 전용 가상 후보입니다.', menu: '불고기 / 냉면', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
                 ]
             },
             {
-                id: 'dessert',
-                region: '성수',
-                title: '빵·케이크·디저트',
-                desc: '인스타 감성과 감탄 나오는 맛의 디저트 성지',
-                badge: '디저트 투표',
-                icon: '🥐',
-                active: true,
+                id: 'review-seongsu-dessert', region: '성수', title: '[검수용 예시] 성수 디저트',
+                desc: '화면과 투표 흐름을 확인하기 위한 가상 예시입니다. 실제 매장 정보가 아닙니다.', badge: '검수용 예시', icon: '🥐', active: true,
                 candidates: [
-                    { id: 101, name: '어니언 성수', desc: '폐공장 개조 핫플, 시그니처 팡도르 대표 베이커리', menu: '팡도르 / 소금빵', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%96%B4%EB%8B%88%EC%96%B8%20%EC%84%B1%EC%88%98', wins: 360, matches: 400 },
-                    { id: 102, name: 'Meal° (밀도)', desc: '줄 서서 먹는 식빵 대표 맛집, 촉촉함의 끝판왕', menu: '큐브식빵 / 커스터드', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B0%80%EB%8F%84%20%EC%84%B1%EC%88%98', wins: 310, matches: 380 },
-                    { id: 103, name: '로우키 (Lowkey)', desc: '스페셜티 커피와 은은한 케이크의 깊은 풍미', menu: '필터커피 / 파운드', img: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%A1%9C%EC%9A%B0%ED%82%A4%20%EC%84%B1%EC%88%98', wins: 260, matches: 330 },
-                    { id: 104, name: '새들러하우스', desc: '크로플 열풍의 주역, 바삭하고 달콤한 크로플', menu: '플레인 크로플', img: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%83%88%EB%93%A4%EB%9F%AC%ED%95%98%EC%9A%B0%EC%8A%A4%20%EC%84%B1%EC%88%98', wins: 230, matches: 310 },
-                    { id: 105, name: '대림창고', desc: '갤러리 카페의 대명사, 비주얼 독보적 타르트', menu: '딸기 타르트', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%8C%80%EB%A6%BC%EC%B0%BD%EA%B3%A0%20%EC%84%B1%EC%88%98', wins: 210, matches: 290 },
-                    { id: 106, name: '클레멘타인', desc: '꽃과 디저트가 함께하는 감성 플라워 카페', menu: '휘낭시에 / 스콘', img: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%ED%81%B4%EB%A0%88%EB%A9%98%ED%83%80%EC%9D%B8', wins: 190, matches: 280 },
-                    { id: 107, name: '자연도 소금빵', desc: '버터 향 풍부한 겉바속촉 극강 소금빵', menu: '소금빵 4개입', img: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%9E%90%EC%97%B0%EB%8F%84%EC%86%8C%EA%B8%88%EB%B9%B5%20%EC%84%B1%EC%88%98', wins: 280, matches: 350 },
-                    { id: 108, name: '베타서비스', desc: '와인과 어울리는 프렌치 스타일 타파스 디저트', menu: '치즈케이크', img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B2%A0%ED%83%80%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%84%B1%EC%88%98', wins: 140, matches: 240 }
+                    { id: 'ss-d-1', name: '[예시] 성수 디저트 A', desc: '검수 전용 가상 후보입니다.', menu: '소금빵 / 크루아상', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'ss-d-2', name: '[예시] 성수 디저트 B', desc: '검수 전용 가상 후보입니다.', menu: '케이크 / 쿠키', img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'ss-d-3', name: '[예시] 성수 디저트 C', desc: '검수 전용 가상 후보입니다.', menu: '타르트 / 휘낭시에', img: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
                 ]
             },
             {
-                id: 'pasta',
-                region: '성수',
-                title: '파스타·피자·스테이크',
-                desc: '소개팅 성공률 100%! Atmosphere & 맛 보장',
-                badge: '양식 투표',
-                icon: '🍝',
-                active: true,
+                id: 'review-konkuk-korean', region: '건대', title: '[검수용 예시] 건대 한식',
+                desc: '화면과 투표 흐름을 확인하기 위한 가상 예시입니다. 실제 매장 정보가 아닙니다.', badge: '검수용 예시', icon: '🍜', active: true,
                 candidates: [
-                    { id: 201, name: '팩피 (FACTFUL PIE)', desc: '고수 파스타와 생면 메뉴를 소개하는 후보입니다.', menu: '고수 파스타 / 흑곤약', img: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281288?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%ED%8C%A9%ED%94%BC%20%EC%84%B1%EC%88%98', wins: 340, matches: 390 },
-                    { id: 202, name: '오스테리아 잔니', desc: '이탈리안 정통 생면 파스타 전문 다이닝', menu: '트러플 뇨끼', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%98%A4%EC%8A%A4%ED%85%8C%EB%A6%AC%EC%95%84%20%EC%9E%94%EB%8B%88', wins: 300, matches: 370 },
-                    { id: 203, name: '성수다락', desc: '크림 파스타와 오므라이스를 메뉴로 등록한 후보입니다.', menu: '다락오므라이스', img: 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%EB%8B%A4%EB%9D%BD', wins: 290, matches: 360 },
-                    { id: 204, name: '바위파스타바', desc: '예약 전쟁! 생면 파스타 바의 감각적인 선두주자', menu: '생면 파스타 코스', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B0%94%EC%9C%84%ED%8C%8C%EC%8A%A4%ED%83%80%EB%B0%94', wins: 270, matches: 330 },
-                    { id: 205, name: '쿠냐', desc: '아늑한 분위기에서 즐기는 스테이크와 생면', menu: '살치살 스테이크', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%BF%A0%EB%83%90', wins: 220, matches: 300 },
-                    { id: 206, name: '세디치', desc: '깔끔한 와인 파어링과 브런치 전문 레스토랑', menu: '버섯 크림 파스타', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EC%84%B8%EB%94%94%EC%B9%98', wins: 190, matches: 280 },
-                    { id: 207, name: '마리오네', desc: '나폴리 피자 대회 우승 피자장인의 화덕피자', menu: '가리발디 피자', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EC%84%B1%EC%88%98%20%EB%A7%88%EB%A6%AC%EC%98%A4%EB%84%A4', wins: 240, matches: 310 },
-                    { id: 208, name: '보메성수', desc: '높은 층고와 모던 아트가 공존하는 럭셔리 다이닝', menu: '해산물 비앙코', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80', naverUrl: 'https://map.naver.com/p/search/%EB%B3%B4%EB%A9%94%EC%84%B1%EC%88%98', wins: 170, matches: 260 }
+                    { id: 'kk-k-1', name: '[예시] 건대 식당 A', desc: '검수 전용 가상 후보입니다.', menu: '순두부찌개 / 국밥', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'kk-k-2', name: '[예시] 건대 식당 B', desc: '검수 전용 가상 후보입니다.', menu: '칼국수 / 만두', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'kk-k-3', name: '[예시] 건대 식당 C', desc: '검수 전용 가상 후보입니다.', menu: '돈가스 / 우동', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
+                ]
+            },
+            {
+                id: 'review-konkuk-snacks', region: '건대', title: '[검수용 예시] 건대 분식',
+                desc: '화면과 투표 흐름을 확인하기 위한 가상 예시입니다. 실제 매장 정보가 아닙니다.', badge: '검수용 예시', icon: '🍢', active: true,
+                candidates: [
+                    { id: 'kk-s-1', name: '[예시] 건대 분식 A', desc: '검수 전용 가상 후보입니다.', menu: '떡볶이 / 튀김', img: 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'kk-s-2', name: '[예시] 건대 분식 B', desc: '검수 전용 가상 후보입니다.', menu: '라면 / 김밥', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
+                    { id: 'kk-s-3', name: '[예시] 건대 분식 C', desc: '검수 전용 가상 후보입니다.', menu: '쫄면 / 순대', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
                 ]
             }
         ];
 
-        const DEFAULT_KONKUK_TOURNAMENTS = [
-            {
-                id: 'konkuk-korean-demo', region: '건대', title: '한식·국밥 (예시)',
-                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🍲', active: true,
-                candidates: [
-                    { id: 3001, name: '건대 국밥집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '순대국밥', img: 'https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3002, name: '건대 국밥집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '뼈해장국', img: 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3003, name: '건대 국밥집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '육개장', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
-                ]
-            },
-            {
-                id: 'konkuk-grill-demo', region: '건대', title: '고기·구이 (예시)',
-                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🥩', active: true,
-                candidates: [
-                    { id: 3011, name: '건대 고깃집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '삼겹살', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3012, name: '건대 고깃집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '갈비', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3013, name: '건대 고깃집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '목살', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
-                ]
-            },
-            {
-                id: 'konkuk-street-food-demo', region: '건대', title: '분식·면요리 (예시)',
-                desc: '화면 확인용 예시 투표입니다. 실제 식당 정보로 수정해 주세요.', badge: '예시 데이터', icon: '🍜', active: true,
-                candidates: [
-                    { id: 3021, name: '건대 분식집 예시 1', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '떡볶이', img: 'https://images.unsplash.com/photo-1635363638580-c2809d049eee?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3022, name: '건대 면요리집 예시 2', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '라멘', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 },
-                    { id: 3023, name: '건대 분식집 예시 3', desc: '샘플 식당 후보입니다. 관리자에서 실제 정보로 수정해 주세요.', menu: '김밥·튀김', img: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=600&q=80', wins: 0, matches: 0 }
-                ]
-            }
-        ];
-        DEFAULT_TOURNAMENTS.push(...DEFAULT_KONKUK_TOURNAMENTS);
+        const LEGACY_DEMO_TOURNAMENT_IDS = new Set([
+            'gamjatang', 'dessert', 'pasta',
+            'konkuk-korean-demo', 'konkuk-grill-demo', 'konkuk-street-food-demo'
+        ]);
 
         // Image Presets for Quick Adding/Editing
         const IMAGE_PRESETS = {
@@ -1391,7 +1355,7 @@
                 this.updateAuthUI();
             },
             logout() {
-                if (supabaseClient) supabaseClient.auth.signOut();
+                if (supabaseClient) supabaseClient.auth.signOut().catch(error => console.error('Sign out failed', error));
                 supabaseAdminVerified = false;
                 this.setUser(null);
                 showToast('로그아웃되었습니다.');
@@ -1469,27 +1433,21 @@
             regions: [],
             settings: {}
         };
+        let legacyDemoVoteCleanupAttempted = false;
         const candidateTournamentIds = new WeakMap();
         let voteDashboard = {
             stats: { totalVotes: 0, todayVotes: 0, dailyTrend: [0, 0, 0, 0, 0, 0, 0] },
             candidateCounts: {}, menuCounts: {}, myDirect: {}, myMenus: {}, recentLogs: []
         };
 
-        function ensureKonkukDemoSeed(state) {
-            if (state.settings?.konkukDemoSeedV1) return false;
+        function ensureLaunchReviewSeed(state) {
+            if (state.settings?.launchReviewSeedV2) return false;
             state.tournaments ||= [];
             state.regions ||= [];
-            const existingIds = new Set(state.tournaments.map(tournament => tournament.id));
-            DEFAULT_KONKUK_TOURNAMENTS.forEach(tournament => {
-                if (!existingIds.has(tournament.id)) {
-                    state.tournaments.push(JSON.parse(JSON.stringify(tournament)));
-                }
-            });
-            const regions = new Set(state.regions);
-            DEFAULT_REGIONS.forEach(region => {
-                if (!regions.has(region)) state.regions.push(region);
-            });
-            state.settings = { ...(state.settings || {}), konkukDemoSeedV1: true };
+            state.tournaments = state.tournaments.filter(tournament => !LEGACY_DEMO_TOURNAMENT_IDS.has(String(tournament.id)) && !DEFAULT_TOURNAMENTS.some(fixture => String(fixture.id) === String(tournament.id)));
+            state.tournaments.push(...JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)));
+            state.regions = [...new Set([...state.regions, ...DEFAULT_REGIONS])];
+            state.settings = { ...(state.settings || {}), launchReviewSeedV2: true };
             return true;
         }
 
@@ -1519,6 +1477,12 @@
 
         const DataService = {
             async initialize(silent = false) {
+                if (!supabaseClient) {
+                    appStateCache = getLegacyStateForMigration();
+                    ensureLaunchReviewSeed(appStateCache);
+                    if (!silent) showToast('백엔드 연결을 불러오지 못해 저장된 로컬 데이터로 화면을 표시합니다. 로그인과 저장은 사용할 수 없습니다.');
+                    return false;
+                }
                 const { data, error } = await supabaseClient
                     .from('app_state').select('state').eq('id', 1).maybeSingle();
                 if (error) {
@@ -1535,10 +1499,29 @@
                 } else {
                     appStateCache = getLegacyStateForMigration();
                 }
-                if (ensureKonkukDemoSeed(appStateCache) && AuthService.isAdmin()) await this.persist();
+                const reviewSeedChanged = ensureLaunchReviewSeed(appStateCache);
+                if (AuthService.isAdmin()) {
+                    let stateChanged = reviewSeedChanged;
+                    if (!appStateCache.settings?.legacyDemoVotesCleanedV1 && !legacyDemoVoteCleanupAttempted) {
+                        legacyDemoVoteCleanupAttempted = true;
+                        const { error: demoVoteCleanupError } = await supabaseClient.rpc('admin_remove_legacy_demo_votes');
+                        if (demoVoteCleanupError) {
+                            console.error('Failed to remove votes from retired demo tournaments', demoVoteCleanupError);
+                            showToast('예시 투표 항목은 교체했지만 이전 예시의 투표 기록은 남아 있습니다. Supabase SQL을 업데이트해 주세요.');
+                        } else {
+                            appStateCache.settings = { ...appStateCache.settings, legacyDemoVotesCleanedV1: true };
+                            stateChanged = true;
+                        }
+                    }
+                    if (stateChanged) await this.persist();
+                }
                 return true;
             },
             async persist() {
+                if (!supabaseClient) {
+                    showToast('백엔드에 연결되지 않아 변경사항을 저장할 수 없습니다.');
+                    return false;
+                }
                 if (!AuthService.isAdmin()) {
                     showToast('관리자 권한이 있어야 데이터를 저장할 수 있습니다.');
                     return false;
@@ -1611,7 +1594,7 @@
                 return this.saveTournaments(list);
             },
             async resetToDefault() {
-                appStateCache = { tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)), regions: [...DEFAULT_REGIONS], settings: { konkukDemoSeedV1: true } };
+                appStateCache = { tournaments: JSON.parse(JSON.stringify(DEFAULT_TOURNAMENTS)), regions: [...DEFAULT_REGIONS], settings: { launchReviewSeedV2: true } };
                 const saved = await this.persist();
                 return saved ? await StatsService.resetVotes() : false;
             }
@@ -1619,6 +1602,7 @@
 
         const StatsService = {
             async refresh() {
+                if (!supabaseClient) return false;
                 const { data, error } = await supabaseClient.rpc('get_vote_dashboard', { p_device_id: getCurrentUserId() });
                 if (error) {
                     console.error('Failed to load vote statistics', error);
@@ -1744,7 +1728,6 @@
             if (activeView === 'view-game') renderPoll();
             else if (activeView === 'view-admin' && AuthService.isAdmin()) refreshAdminData();
             else if (activeView === 'view-tierlist') renderTierlist();
-            else if (activeView === 'view-nearby') renderNearbyResults();
             else if (activeView === 'view-community') loadCommunityFeed();
             else if (activeView === 'view-mypage') renderMyPage();
             else renderHomeCategories();
@@ -1773,7 +1756,6 @@
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.add('hidden');
             document.getElementById('view-tierlist').classList.add('hidden');
-            document.getElementById('view-nearby').classList.add('hidden');
             document.getElementById('view-community').classList.add('hidden');
             document.getElementById('view-mypage').classList.add('hidden');
             document.getElementById('view-admin').classList.add('hidden');
@@ -1794,13 +1776,6 @@
             if (viewName === 'tierlist') {
                 renderTierlist();
             }
-            if (viewName === 'nearby') {
-                requestAnimationFrame(() => {
-                    ensureNearbyMap();
-                    resizeNaverMap(nearbyMap);
-                    renderNearbyResults();
-                });
-            }
             if (viewName === 'community') {
                 populateCommunityRegionOptions();
                 loadCommunityFeed();
@@ -1820,216 +1795,6 @@
                 button.classList.toggle('text-gray-500', !active);
                 button.setAttribute('aria-current', active ? 'page' : 'false');
             });
-        }
-
-        let nearbyMap = null;
-        let nearbyMapMarkers = [];
-        let nearbyRadiusCircle = null;
-        let nearbyCurrentMarker = null;
-        let nearbyLocation = null;
-        let nearbyRadiusKm = 3;
-
-        function resizeNaverMap(map) {
-            if (map && typeof map.autoResize === 'function') map.autoResize();
-        }
-
-        function toNaverLatLng(latitude, longitude) {
-            return new naver.maps.LatLng(latitude, longitude);
-        }
-
-        function clearNearbyMapOverlays() {
-            nearbyMapMarkers.forEach(marker => marker.setMap(null));
-            nearbyMapMarkers = [];
-            if (nearbyCurrentMarker) nearbyCurrentMarker.setMap(null);
-            nearbyCurrentMarker = null;
-            if (nearbyRadiusCircle) nearbyRadiusCircle.setMap(null);
-            nearbyRadiusCircle = null;
-        }
-
-        function ensureNearbyMap() {
-            const mapElement = document.getElementById('nearby-map');
-            if (!mapElement || !window.naver?.maps) {
-                const status = document.getElementById('nearby-status');
-                if (status) status.textContent = '네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.';
-                return;
-            }
-            if (nearbyMap) return;
-            nearbyMap = new naver.maps.Map(mapElement, {
-                center: toNaverLatLng(37.5665, 126.9780),
-                zoom: 12,
-                zoomControl: true,
-                zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }
-            });
-        }
-
-        function setNearbyRadius(value) {
-            nearbyRadiusKm = Number(value) || 3;
-            renderNearbyResults();
-        }
-
-        function requestNearbyLocation() {
-            const status = document.getElementById('nearby-status');
-            if (!navigator.geolocation) {
-                status.textContent = '이 브라우저에서는 위치 기능을 사용할 수 없습니다.';
-                return;
-            }
-            status.textContent = '현재 위치를 확인하고 있어요…';
-            navigator.geolocation.getCurrentPosition(position => {
-                nearbyLocation = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-                ensureNearbyMap();
-                if (nearbyMap) {
-                    nearbyMap.setCenter(toNaverLatLng(nearbyLocation.latitude, nearbyLocation.longitude));
-                    nearbyMap.setZoom(14);
-                    resizeNaverMap(nearbyMap);
-                }
-                renderNearbyResults();
-            }, error => {
-                const messages = {
-                    1: '위치 권한이 거부됐어요. 브라우저 설정에서 위치 권한을 허용해 주세요.',
-                    2: '현재 위치를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
-                    3: '위치 확인 시간이 초과됐습니다. 다시 시도해 주세요.'
-                };
-                status.textContent = messages[error.code] || '현재 위치를 가져오지 못했습니다.';
-            }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 30000 });
-        }
-
-        function getDistanceMeters(from, to) {
-            const radians = degrees => degrees * Math.PI / 180;
-            const dLat = radians(to.latitude - from.latitude);
-            const dLon = radians(to.longitude - from.longitude);
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(dLon / 2) ** 2;
-            return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
-
-        function getNearbyCandidates() {
-            return DataService.getTournaments().filter(tournament => tournament.active !== false)
-                .flatMap(tournament => (tournament.candidates || []).map(candidate => ({ ...candidate, tournamentId: String(tournament.id), region: getTournamentRegion(tournament) })))
-                .filter(candidate => Number.isFinite(Number(candidate.latitude)) && Number.isFinite(Number(candidate.longitude)))
-                .map(candidate => ({
-                    ...candidate,
-                    latitude: Number(candidate.latitude),
-                    longitude: Number(candidate.longitude),
-                    distance: getDistanceMeters(nearbyLocation, { latitude: Number(candidate.latitude), longitude: Number(candidate.longitude) }),
-                    votes: getCandidateVotes(candidate)
-                }))
-                .filter(candidate => candidate.distance <= nearbyRadiusKm * 1000)
-                .sort((a, b) => b.votes - a.votes || a.distance - b.distance);
-        }
-
-        function renderNearbyResults() {
-            const list = document.getElementById('nearby-ranking-list');
-            const count = document.getElementById('nearby-result-count');
-            const status = document.getElementById('nearby-status');
-            if (!list || !count) return;
-            list.replaceChildren();
-            clearNearbyMapOverlays();
-            if (!nearbyLocation) {
-                count.textContent = '';
-                const item = document.createElement('li');
-                item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm text-gray-400';
-                item.textContent = '현재 위치를 사용하면 가까운 맛집 순위를 볼 수 있어요.';
-                list.appendChild(item);
-                resizeNaverMap(nearbyMap);
-                return;
-            }
-
-            if (!window.naver?.maps || !nearbyMap) {
-                status.textContent = '네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.';
-                return;
-            }
-
-            status.textContent = `현재 위치 기준 반경 ${nearbyRadiusKm}km · 위치는 사이트 서버에 저장하지 않습니다.`;
-            const center = toNaverLatLng(nearbyLocation.latitude, nearbyLocation.longitude);
-            nearbyCurrentMarker = new naver.maps.Marker({
-                position: center,
-                map: nearbyMap,
-                title: '현재 위치',
-                icon: { content: '<div style="width:18px;height:18px;border:3px solid #fff;border-radius:50%;background:#2563eb;box-shadow:0 1px 6px #0008"></div>', anchor: new naver.maps.Point(9, 9) }
-            });
-            nearbyRadiusCircle = new naver.maps.Circle({
-                map: nearbyMap,
-                center,
-                radius: nearbyRadiusKm * 1000,
-                strokeColor: '#FF5E1E', strokeOpacity: 0.9, strokeWeight: 2,
-                fillColor: '#FF5E1E', fillOpacity: 0.08
-            });
-            const candidates = getNearbyCandidates();
-            count.textContent = `${candidates.length}곳`;
-            if (!candidates.length) {
-                const item = document.createElement('li');
-                item.className = 'rounded-xl border border-brand-border bg-brand-dark p-4 text-sm leading-relaxed text-gray-400';
-                item.textContent = '반경 안에 좌표가 등록된 후보가 없습니다. 관리자 화면에서 맛집의 위도와 경도를 등록해 주세요.';
-                list.appendChild(item);
-                resizeNaverMap(nearbyMap);
-                return;
-            }
-
-            const bounds = nearbyRadiusCircle.getBounds();
-            candidates.forEach((candidate, index) => {
-                const distanceText = candidate.distance < 1000 ? `${Math.round(candidate.distance)}m` : `${(candidate.distance / 1000).toFixed(1)}km`;
-                const marker = new naver.maps.Marker({
-                    position: toNaverLatLng(candidate.latitude, candidate.longitude),
-                    map: nearbyMap,
-                    title: `${index + 1}위 · ${candidate.name}`
-                });
-                nearbyMapMarkers.push(marker);
-                const popup = document.createElement('div');
-                popup.style.cssText = 'min-width:150px;padding:4px;color:#111827;font-size:12px;line-height:1.5';
-                const popupTitle = document.createElement('strong');
-                popupTitle.style.display = 'block';
-                popupTitle.textContent = `${index + 1}위 · ${candidate.name}`;
-                const popupDetails = document.createElement('div');
-                popupDetails.style.color = '#4b5563';
-                popupDetails.textContent = `${candidate.votes.toLocaleString()}표 · ${distanceText}`;
-                const popupMapLink = document.createElement('a');
-                popupMapLink.href = getNaverMapUrl(candidate);
-                popupMapLink.target = '_blank';
-                popupMapLink.rel = 'noopener noreferrer';
-                popupMapLink.textContent = '네이버 지도에서 보기';
-                popupMapLink.style.cssText = 'display:inline-block;margin-top:4px;color:#03a94d;font-weight:700';
-                popup.append(popupTitle, popupDetails, popupMapLink);
-                const infoWindow = new naver.maps.InfoWindow({ content: popup, maxWidth: 240, borderWidth: 0, backgroundColor: '#fff' });
-                naver.maps.Event.addListener(marker, 'click', () => infoWindow.open(nearbyMap, marker));
-                bounds.extend(marker.getPosition());
-
-                const row = document.createElement('li');
-                row.className = 'flex items-center gap-3 rounded-xl border border-brand-border bg-brand-dark p-3';
-                const rank = document.createElement('span');
-                rank.className = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/15 text-xs font-black text-brand-orange';
-                rank.textContent = String(index + 1);
-                const details = document.createElement('span');
-                details.className = 'min-w-0 flex-1';
-                const name = document.createElement('strong');
-                name.className = 'block truncate text-sm text-white';
-                name.textContent = candidate.name;
-                const meta = document.createElement('span');
-                meta.className = 'block truncate text-xs text-gray-400';
-                meta.textContent = `${candidate.region} · ${candidate.menu || ''} · ${distanceText}`;
-                details.append(name, meta);
-                const right = document.createElement('span');
-                right.className = 'flex shrink-0 flex-col items-end gap-1';
-                const votes = document.createElement('span');
-                votes.className = 'text-xs font-bold text-brand-yellow';
-                votes.textContent = `${candidate.votes.toLocaleString()}표`;
-                const mapLink = document.createElement('a');
-                mapLink.href = getNaverMapUrl(candidate);
-                mapLink.target = '_blank';
-                mapLink.rel = 'noopener noreferrer';
-                mapLink.className = 'text-[10px] font-bold text-[#03C75A] hover:underline';
-                mapLink.textContent = '네이버 지도';
-                right.append(votes, mapLink);
-                row.append(rank, details, right);
-                row.addEventListener('click', event => {
-                    if (event.target === mapLink || mapLink.contains(event.target)) return;
-                    infoWindow.open(nearbyMap, marker);
-                    nearbyMap.setCenter(marker.getPosition());
-                });
-                list.appendChild(row);
-            });
-            if (nearbyMap) {
-                resizeNaverMap(nearbyMap);
-                nearbyMap.fitBounds(bounds, { top: 24, right: 24, bottom: 24, left: 24, maxZoom: 15 });
-            }
         }
 
         let communitySort = 'latest';
@@ -2828,6 +2593,7 @@
 
         // --- RENDER USER HOME CATEGORIES ---
         function renderHomeCategories() {
+            applyHomeHeroSettings();
             const container = document.getElementById('category-cards-container');
             const allTournaments = DataService.getTournaments().filter(t => t.active !== false);
             const regions = getAvailableRegions();
@@ -2838,10 +2604,8 @@
                 regionSelect.innerHTML = `<option value="전체">전체</option>${regions.map(region => `<option value="${region}">${region}</option>`).join('')}`;
                 regionSelect.value = currentRegion;
             }
-            renderRegionFilters("home-region-filters");
             document.getElementById("home-region-title").innerText = currentRegion;
             document.getElementById("home-region-badge").innerText = currentRegion;
-            document.getElementById("hero-region-copy").innerText = currentRegion;
             const resultRegionTitle = document.getElementById("result-region-title");
             if (resultRegionTitle) resultRegionTitle.innerText = currentRegion;
             document.getElementById("notice-region-title").innerText = currentRegion;
@@ -2943,12 +2707,12 @@
                 const menuPanel = selected ? `
                     <section class="pt-3 border-t border-brand-border space-y-2">
                         <div><h4 class="text-sm font-bold text-white">이 식당에서 가장 맛있었던 메뉴는?</h4><p class="text-[11px] text-gray-400">선택 참여 · 여러 메뉴를 고를 수 있고, 메뉴마다 한 표만 가능해요</p></div>
-                        <div class="flex flex-wrap gap-2">${getMenuChoices(candidate).map(menu => {
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${getMenuChoices(candidate).map(menu => {
                             const menuVotes = (Number((candidate.menuVotes || {})[menu]) || 0) + StatsService.getMenuVoteCount(currentTournament.id, candidate.id, menu);
                             const alreadyVoted = getMyMenuVotes(currentTournament.id, candidate.id).includes(menu);
                             const candidateArg = encodeURIComponent(String(candidate.id)).replace(/'/g, '%27');
                             const menuArg = encodeURIComponent(menu).replace(/'/g, '%27');
-                            return `<span class="inline-flex items-center gap-1"><button type="button" ${alreadyVoted ? 'disabled' : ''} onclick="castMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="px-3 py-2 rounded-lg ${alreadyVoted ? 'border-brand-orange bg-brand-orange/10 text-brand-orange' : 'bg-brand-dark border-brand-border hover:border-brand-orange text-gray-200'} border text-xs font-semibold disabled:cursor-default">${menu} <span class="${alreadyVoted ? 'text-brand-orange' : 'text-brand-neon'} ml-1">${alreadyVoted ? '내 투표 · ' : ''}${menuVotes}표</span></button>${alreadyVoted ? `<button type="button" onclick="cancelMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="px-2 py-2 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 text-xs">취소</button>` : ''}</span>`;
+                            return `<span class="flex min-w-0 items-stretch gap-1"><button type="button" ${alreadyVoted ? 'disabled' : ''} onclick="castMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold disabled:cursor-default ${alreadyVoted ? 'border-brand-orange bg-brand-orange/10 text-brand-orange' : 'bg-brand-dark border-brand-border hover:border-brand-orange text-gray-200'}"><span class="min-w-0 truncate">${menu}</span><span class="shrink-0 ${alreadyVoted ? 'text-brand-orange' : 'text-brand-neon'}">${alreadyVoted ? '내 투표 · ' : ''}${menuVotes}표</span></button>${alreadyVoted ? `<button type="button" onclick="cancelMenuVote(decodeURIComponent('${candidateArg}'),decodeURIComponent('${menuArg}'))" class="shrink-0 rounded-lg bg-red-500/10 px-2 py-2 text-xs text-red-300 hover:bg-red-500/20">취소</button>` : ''}</span>`;
                         }).join('')}</div>
                     </section>` : '';
                 card.innerHTML = `
@@ -2956,7 +2720,7 @@
                     <div class="p-4 space-y-3">
                         <div><span class="text-[11px] text-brand-yellow font-bold">대표 메뉴 · ${candidate.menu || '미등록'}</span><h3 class="text-lg font-black text-white">${candidate.name}</h3><p class="text-xs text-gray-400 mt-1">${candidate.desc || ''}</p></div>
                         <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-300">${votes.toLocaleString()}표</span><strong class="text-brand-neon">${percent}%</strong></div><div class="h-2 rounded-full bg-brand-dark overflow-hidden"><div class="h-full bg-gradient-to-r from-brand-orange to-brand-yellow rounded-full transition-all" style="width:${percent}%"></div></div></div>
-                        <a href="${getNaverMapUrl(candidate)}" target="_blank" class="text-[11px] text-gray-400 hover:text-white"><i class="fa-solid fa-location-dot text-[#03C75A]"></i> 지도 보기</a>
+                        <a href="${getNaverMapUrl(candidate)}" target="_blank" rel="noopener noreferrer" class="text-[11px] text-gray-400 hover:text-white"><i class="fa-solid fa-location-dot text-[#03C75A]"></i> 지도 보기</a>
                         <button type="button" onclick="castPollVote(${JSON.stringify(candidate.id)})" ${myVote ? 'disabled' : ''} class="w-full py-2.5 rounded-xl ${myVote ? (selected ? 'bg-brand-orange text-white' : 'bg-brand-dark text-gray-500') : 'bg-brand-orange hover:bg-orange-500 text-white'} font-bold text-sm disabled:cursor-default">${myVote ? (selected ? '내가 픽한 식당' : '투표 완료') : '이 식당을 픽하기'}</button>
                         ${selected ? `<button type="button" onclick="cancelRestaurantVote(${JSON.stringify(candidate.id)})" class="w-full py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 font-semibold text-sm">식당 픽 취소</button>` : ''}
                         ${menuPanel}
@@ -3182,7 +2946,7 @@
                                 <span class="text-xs font-bold text-brand-orange bg-brand-orange/10 px-2.5 py-1.5 rounded-md border border-brand-orange/20 whitespace-nowrap">
                                     ${votes.toLocaleString()}표
                                 </span>
-                                <a href="${naverLink}" target="_blank" class="px-3 py-1.5 rounded-md bg-[#03C75A] hover:bg-[#02b351] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                                <a href="${naverLink}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-md bg-[#03C75A] hover:bg-[#02b351] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap">
                                     <i class="fa-solid fa-location-dot"></i> <span>네이버 지도</span>
                                 </a>
                             </div>
@@ -3233,6 +2997,8 @@
             } else if (tabName === 'system') {
                 const settings = DataService.getSettings();
                 if (settings.voteLimit) document.getElementById('setting-vote-limit').value = settings.voteLimit;
+                document.getElementById('setting-hero-headline').value = settings.heroHeadline ?? '오늘 뭐 먹지? 여기서 픽하자.';
+                document.getElementById('setting-hero-description').value = settings.heroDescription ?? 'frank처럼 솔직하게, 투표 기준과 결과를 투명하게 공개해요. 리뷰 이벤트 보상 대신 로그인 이용자의 선택을 모아 {지역} 맛집 흐름을 보여드려요.';
             }
         }
 
@@ -3310,7 +3076,7 @@
                             <span class="text-xs font-bold text-brand-orange block">${getCandidateVotes(c).toLocaleString()}표</span>
                             <span class="text-[10px] text-gray-400 block">득표 현황</span>
                         </div>
-                        <a href="${getNaverMapUrl(c)}" target="_blank" class="p-1.5 rounded bg-[#03C75A]/20 hover:bg-[#03C75A] text-[#03C75A] hover:text-white transition-all text-xs" title="네이버 지도 보기">
+                        <a href="${getNaverMapUrl(c)}" target="_blank" rel="noopener noreferrer" class="p-1.5 rounded bg-[#03C75A]/20 hover:bg-[#03C75A] text-[#03C75A] hover:text-white transition-all text-xs" title="네이버 지도 보기">
                             <i class="fa-solid fa-location-dot"></i>
                         </a>
                     </div>
@@ -3661,7 +3427,7 @@
                             <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 text-white text-[10px] font-bold">
                                 득표 현황 (${getCandidateVotes(c).toLocaleString()}표)
                             </span>
-                            <a href="${naverLink}" target="_blank" class="absolute top-2 right-2 px-2 py-0.5 rounded bg-[#03C75A] hover:bg-[#02b351] text-white text-[10px] font-black flex items-center gap-1 shadow-md">
+                            <a href="${naverLink}" target="_blank" rel="noopener noreferrer" class="absolute top-2 right-2 px-2 py-0.5 rounded bg-[#03C75A] hover:bg-[#02b351] text-white text-[10px] font-black flex items-center gap-1 shadow-md">
                                 <i class="fa-solid fa-n"></i> 네이버 지도
                             </a>
                         </div>
@@ -3695,15 +3461,12 @@
 
         function openAddCandidateModal() {
             const filterSelect = document.getElementById('admin-candidate-filter-select');
-            document.getElementById('candidate-location-picker').classList.add('hidden');
             document.getElementById('modal-candidate-title').innerText = '신규 맛집 등록';
             document.getElementById('input-candidate-id').value = '';
             document.getElementById('input-candidate-tournament').value = filterSelect.value;
             document.getElementById('input-candidate-name').value = '';
             document.getElementById('input-candidate-menu').value = '';
             document.getElementById('input-candidate-naver').value = '';
-            document.getElementById('input-candidate-latitude').value = '';
-            document.getElementById('input-candidate-longitude').value = '';
             document.getElementById('input-candidate-desc').value = '';
             document.getElementById('input-candidate-img').value = IMAGE_PRESETS.korean;
             previewCandidateImage(IMAGE_PRESETS.korean);
@@ -3716,16 +3479,12 @@
             if (!tourney) return;
             const candidate = (tourney.candidates || []).find(c => c.id === candidateId);
             if (!candidate) return;
-
-            document.getElementById('candidate-location-picker').classList.add('hidden');
             document.getElementById('modal-candidate-title').innerText = '맛집 정보 수정';
             document.getElementById('input-candidate-id').value = candidate.id;
             document.getElementById('input-candidate-tournament').value = tourneyId;
             document.getElementById('input-candidate-name').value = candidate.name;
             document.getElementById('input-candidate-menu').value = candidate.menu;
             document.getElementById('input-candidate-naver').value = candidate.naverUrl || getNaverMapUrl(candidate);
-            document.getElementById('input-candidate-latitude').value = candidate.latitude ?? '';
-            document.getElementById('input-candidate-longitude').value = candidate.longitude ?? '';
             document.getElementById('input-candidate-desc').value = candidate.desc;
             document.getElementById('input-candidate-img').value = candidate.img || '';
             previewCandidateImage(candidate.img || '');
@@ -3735,53 +3494,6 @@
 
         function closeCandidateModal() {
             document.getElementById('modal-candidate').classList.add('hidden');
-        }
-
-        let candidatePickerMap = null;
-        let candidatePickerMarker = null;
-
-        function toggleCandidateLocationPicker() {
-            const picker = document.getElementById('candidate-location-picker');
-            picker.classList.toggle('hidden');
-            if (picker.classList.contains('hidden')) return;
-            if (!window.naver?.maps) {
-                showToast('네이버 지도를 불러오지 못했습니다. 네이버 클라우드 플랫폼의 웹 서비스 URL 설정을 확인해 주세요.');
-                return;
-            }
-            const latValue = document.getElementById('input-candidate-latitude').value.trim();
-            const lngValue = document.getElementById('input-candidate-longitude').value.trim();
-            const lat = Number(latValue);
-            const lng = Number(lngValue);
-            const hasCoordinates = Boolean(latValue && lngValue) && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-            if (!candidatePickerMap) {
-                candidatePickerMap = new naver.maps.Map('candidate-picker-map', {
-                    center: toNaverLatLng(hasCoordinates ? lat : 37.5665, hasCoordinates ? lng : 126.9780),
-                    zoom: hasCoordinates ? 16 : 12,
-                    zoomControl: true,
-                    zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }
-                });
-                naver.maps.Event.addListener(candidatePickerMap, 'click', event => {
-                    const pickedLat = event.coord.lat();
-                    const pickedLng = event.coord.lng();
-                    document.getElementById('input-candidate-latitude').value = pickedLat.toFixed(6);
-                    document.getElementById('input-candidate-longitude').value = pickedLng.toFixed(6);
-                    if (candidatePickerMarker) candidatePickerMarker.setPosition(event.coord);
-                    else candidatePickerMarker = new naver.maps.Marker({ position: event.coord, map: candidatePickerMap });
-                });
-            }
-            setTimeout(() => {
-                resizeNaverMap(candidatePickerMap);
-                if (hasCoordinates) {
-                    const position = toNaverLatLng(lat, lng);
-                    candidatePickerMap.setCenter(position);
-                    candidatePickerMap.setZoom(16);
-                    if (candidatePickerMarker) candidatePickerMarker.setPosition(position);
-                    else candidatePickerMarker = new naver.maps.Marker({ position, map: candidatePickerMap });
-                } else if (candidatePickerMarker) {
-                    candidatePickerMarker.setMap(null);
-                    candidatePickerMarker = null;
-                }
-            }, 0);
         }
 
         function handleCandidateNameChange(name) {
@@ -3830,19 +3542,6 @@
             const naverUrl = document.getElementById('input-candidate-naver').value.trim() || `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
             const desc = document.getElementById('input-candidate-desc').value.trim();
             const img = document.getElementById('input-candidate-img').value.trim();
-            const latitudeValue = document.getElementById('input-candidate-latitude').value.trim();
-            const longitudeValue = document.getElementById('input-candidate-longitude').value.trim();
-            if (Boolean(latitudeValue) !== Boolean(longitudeValue)) {
-                showToast('지도 위치를 등록하려면 위도와 경도를 모두 입력해 주세요.');
-                return;
-            }
-            const latitude = latitudeValue ? Number(latitudeValue) : null;
-            const longitude = longitudeValue ? Number(longitudeValue) : null;
-            if (latitudeValue && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180)) {
-                showToast('위도 또는 경도 값이 올바르지 않습니다.');
-                return;
-            }
-
             const candidateData = {
                 id: idVal ? Number(idVal) : null,
                 name: name,
@@ -3850,8 +3549,6 @@
                 naverUrl: naverUrl,
                 desc: desc,
                 img: img,
-                latitude,
-                longitude
             };
 
             if (!await DataService.saveCandidate(tourneyId, candidateData)) return;
@@ -3883,16 +3580,29 @@
         // --- ADMIN TAB 4: SYSTEM SETTINGS ---
         async function saveSystemSettings() {
             const voteLimit = document.getElementById('setting-vote-limit').value;
-
-            const settings = { ...DataService.getSettings(), voteLimit };
+            const heroHeadline = document.getElementById('setting-hero-headline').value.trim();
+            const heroDescription = document.getElementById('setting-hero-description').value.trim();
+            const settings = { ...DataService.getSettings(), voteLimit, heroHeadline, heroDescription };
             if (!await DataService.saveSettings(settings)) return;
+            applyHomeHeroSettings();
             await StatsService.addLog(`[시스템 설정] 투표 정책이 업데이트되었습니다.`);
             showToast('✅ 시스템 설정이 저장되었습니다!');
         }
 
+        function applyHomeHeroSettings() {
+            const settings = DataService.getSettings();
+            const headline = document.getElementById('home-hero-headline');
+            const description = document.getElementById('home-hero-description');
+            if (headline) headline.textContent = settings.heroHeadline || '오늘 뭐 먹지? 여기서 픽하자.';
+            if (description) description.textContent = (settings.heroDescription || 'frank처럼 솔직하게, 투표 기준과 결과를 투명하게 공개해요. 리뷰 이벤트 보상 대신 로그인 이용자의 선택을 모아 {지역} 맛집 흐름을 보여드려요.').replaceAll('{지역}', currentRegion);
+        }
+
         function exportDataJSON() {
             const data = {
+                exportVersion: 2,
                 tournaments: DataService.getTournaments(),
+                regions: DataService.getRegions(),
+                settings: DataService.getSettings(),
                 stats: StatsService.getStats(),
                 exportedAt: new Date().toISOString()
             };
@@ -3902,7 +3612,7 @@
             a.href = url;
             a.download = `seongsu_food_data_${Date.now()}.json`;
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             showToast('💾 데이터가 JSON 파일로 다운로드되었습니다.');
         }
 
@@ -3933,7 +3643,7 @@
         }
 
         async function confirmResetToDefault() {
-            if (confirm('모든 변경사항과 통계를 초기 상태로 리셋하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            if (confirm('모든 투표 항목, 지역, 통계 및 관련 투표 기록을 삭제하고 초기 예시 데이터로 되돌립니다. 이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?')) {
                 if (!await DataService.resetToDefault()) return;
                 refreshAdminData();
                 showToast('🔄 모든 데이터가 초기 상태로 복구되었습니다.');
@@ -3970,6 +3680,52 @@
             element.className = `text-xs text-center leading-relaxed ${isError ? 'text-red-300' : 'text-emerald-300'}`;
         }
 
+        function preparePolicyAcceptance() {
+            const checkbox = document.getElementById('auth-policy-agreement');
+            if (!checkbox?.checked) {
+                showAuthFormMessage('만 14세 이상 확인과 이용약관 동의가 필요합니다.', true);
+                return null;
+            }
+            const acceptance = { version: CONFIG.POLICY_VERSION, acceptedAt: new Date().toISOString() };
+            try {
+                localStorage.setItem('FRANK_POLICY_ACCEPTANCE_PENDING', JSON.stringify(acceptance));
+                return acceptance;
+            } catch (error) {
+                showAuthFormMessage('동의 정보를 저장하지 못했습니다. 브라우저 저장소를 확인해 주세요.', true);
+                return null;
+            }
+        }
+
+        let policyAcceptanceUpdateInProgress = false;
+
+        async function recordPendingPolicyAcceptance(authUser) {
+            if (!supabaseClient || !authUser || policyAcceptanceUpdateInProgress) return;
+            let acceptance;
+            try { acceptance = JSON.parse(localStorage.getItem('FRANK_POLICY_ACCEPTANCE_PENDING') || 'null'); }
+            catch (error) { acceptance = null; }
+            if (!acceptance || acceptance.version !== CONFIG.POLICY_VERSION) return;
+            if (authUser.user_metadata?.terms_version === CONFIG.POLICY_VERSION && authUser.user_metadata?.privacy_notice_version === CONFIG.POLICY_VERSION) {
+                localStorage.removeItem('FRANK_POLICY_ACCEPTANCE_PENDING');
+                return;
+            }
+            policyAcceptanceUpdateInProgress = true;
+            try {
+                const { error } = await supabaseClient.auth.updateUser({ data: {
+                    terms_version: CONFIG.POLICY_VERSION,
+                    terms_accepted_at: acceptance.acceptedAt,
+                    privacy_notice_version: CONFIG.POLICY_VERSION
+                } });
+                if (error) {
+                    console.error('Failed to store policy acceptance metadata', error);
+                    showToast('정책 동의 기록을 저장하지 못했습니다. 다시 로그인해 주세요.');
+                    return;
+                }
+                localStorage.removeItem('FRANK_POLICY_ACCEPTANCE_PENDING');
+            } finally {
+                policyAcceptanceUpdateInProgress = false;
+            }
+        }
+
         async function submitSupabaseAuth(event) {
             event.preventDefault();
             if (!supabaseClient) {
@@ -3978,15 +3734,18 @@
             }
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
+            const policyAcceptance = preparePolicyAcceptance();
+            if (!policyAcceptance) return;
             const submitButton = document.getElementById('auth-submit-button');
             submitButton.disabled = true;
             submitButton.textContent = '처리 중…';
             try {
                 const result = supabaseAuthMode === 'signup'
-                    ? await supabaseClient.auth.signUp({ email, password })
+                    ? await supabaseClient.auth.signUp({ email, password, options: { data: { terms_version: CONFIG.POLICY_VERSION, terms_accepted_at: policyAcceptance.acceptedAt, privacy_notice_version: CONFIG.POLICY_VERSION } } })
                     : await supabaseClient.auth.signInWithPassword({ email, password });
                 if (result.error) throw result.error;
                 if (supabaseAuthMode === 'signup' && !result.data.session) {
+                    localStorage.removeItem('FRANK_POLICY_ACCEPTANCE_PENDING');
                     showAuthFormMessage('가입 확인 메일을 보냈습니다. 메일의 인증 링크를 누른 뒤 로그인해 주세요.');
                     return;
                 }
@@ -4008,6 +3767,7 @@
                     switchToUserView();
                 }
             } catch (error) {
+                localStorage.removeItem('FRANK_POLICY_ACCEPTANCE_PENDING');
                 showAuthFormMessage(error.message || '인증에 실패했습니다. 입력 내용을 확인해 주세요.', true);
             } finally {
                 submitButton.disabled = false;
@@ -4021,6 +3781,8 @@
                 return;
             }
             const button = document.querySelector('#login-form-user button[onclick="signInWithKakao()"]');
+            const policyAcceptance = preparePolicyAcceptance();
+            if (!policyAcceptance) return;
             const originalText = button?.textContent || '';
             if (button) {
                 button.disabled = true;
@@ -4034,6 +3796,7 @@
                 });
                 if (error) throw error;
             } catch (error) {
+                localStorage.removeItem('FRANK_POLICY_ACCEPTANCE_PENDING');
                 showAuthFormMessage(error.message || '카카오 로그인에 실패했습니다.', true);
                 if (button) {
                     button.disabled = false;
@@ -4105,6 +3868,7 @@
                 return { role: 'user', error: null };
             }
             supabaseSessionUserId = authUser.id;
+            await recordPendingPolicyAcceptance(authUser);
             const { data, error } = await supabaseClient
                 .from('user_roles')
                 .select('user_id')
@@ -4205,5 +3969,8 @@
             }, 3000);
         }
     </script>
+<script>
+(function(){var key='frank-theme';function setTheme(theme){document.documentElement.classList.toggle('dark',theme==='dark');try{localStorage.setItem(key,theme)}catch(_){}document.querySelectorAll('[data-theme-toggle]').forEach(function(b){var d=theme==='dark';b.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');b.innerHTML=d?'<i class="fa-solid fa-sun" aria-hidden="true"></i> Light':'<i class="fa-solid fa-moon" aria-hidden="true"></i> Dark'})}document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.addEventListener('click',function(){setTheme(document.documentElement.classList.contains('dark')?'light':'dark')})});setTheme(document.documentElement.classList.contains('dark')?'dark':'light')})();
+</script>
 </body>
 </html>
